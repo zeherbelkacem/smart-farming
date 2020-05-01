@@ -2,10 +2,13 @@
 
 # Iot Based Smart Farming  Monitoring & Control System
 
-[[_TOC_]]
 
 
 ## 1- Preface and acknowledgement
+
+xxxxxxxxxxxx
+
+xxxxxxxxxxxxxxxx
 
 ## 2- Initial global scheme
 
