@@ -6,8 +6,8 @@
 
 ## 1- Preface and acknowledgement
 
-xxxxxxxxxxxx
-
+xxxxxxxxxxxxxxx
+xxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxx
 
 ## 2- Initial global scheme
