@@ -1,8 +1,0 @@
-.cproject
-.mxproject
-.project
-.settings/
-Drivers/
-STM32G071RBTX_FLASH.ld
-Debug/
-*.launch
