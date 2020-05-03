@@ -8,3 +8,8 @@ Debug/
 *.launch
 .metadata/
 RemoteSystemsTempFiles
+
+###VSCODE###
+test/
+lib/
+platformio.ini
