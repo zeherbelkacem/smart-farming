@@ -27,6 +27,7 @@
 #include "dbg.h"
 #include "tcs34725.h" //RGB Color Sensor
 #include "dht11.h" // Humidity & Temperature sensor
+#include "mh-water-sensor.h" //Water level sensor
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,7 +58,7 @@ UART_HandleTypeDef huart3;
 /* USER CODE BEGIN PV */
 float realRed = 0.0, realGreen = 0.0, realBlue = 0.0; //RBB driver
 float airHumidity = 0.0, temperature = 0.0; //dht11 driver
-
+const char *waterLevel; //water driver
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -125,13 +126,17 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  HAL_Delay(2000);
+
 	  tcs34725_get_RGB_Values(&realRed, &realGreen, &realBlue);
 	  printf("RED = %.2f, GREEN = %.2f, BLUE = %.2f\n", realRed, realGreen, realBlue);
 	  tcs34725_see_rgbLED(realRed, realGreen, realBlue);
 
 	  dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
 	  printf("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
-	  HAL_Delay(2000);
+
+	  waterLevel = mh_water_get_value();
+	  printf("water level %s\n", waterLevel);
   }
   /* USER CODE END 3 */
 }
