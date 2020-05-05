@@ -126,17 +126,18 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HAL_Delay(2000);
+
 
 	  tcs34725_get_RGB_Values(&realRed, &realGreen, &realBlue);
 	  printf("RED = %.2f, GREEN = %.2f, BLUE = %.2f\n", realRed, realGreen, realBlue);
 	  tcs34725_see_rgbLED(realRed, realGreen, realBlue);
 
-	  dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
+	 /* dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
 	  printf("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
 
 	  waterLevel = mh_water_get_value();
-	  printf("water level %s\n", waterLevel);
+	  printf("water level %s\n", waterLevel);*/
+	  HAL_Delay(500);
   }
   /* USER CODE END 3 */
 }

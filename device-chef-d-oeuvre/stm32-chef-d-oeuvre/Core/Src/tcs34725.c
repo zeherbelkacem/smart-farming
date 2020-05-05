@@ -167,9 +167,9 @@ void tcs34725_see_rgbLED(uint16_t redColor, uint16_t greenColor, uint16_t blueCo
 	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_1, redColor );//Red LED "ON"
 	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_2, greenColor );//Green LED "ON"
 	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_3, blueColor );//Blue LED "ON"
-	  HAL_Delay(3000);
+	/*  HAL_Delay(3000);
 	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_1, 0 );//Red LED "OFF"
 	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_2, 0 );
-	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_3, 0 );
+	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_3, 0 );*/
 
 }
