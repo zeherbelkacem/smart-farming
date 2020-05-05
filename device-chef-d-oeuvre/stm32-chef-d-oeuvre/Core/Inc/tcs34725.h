@@ -20,7 +20,7 @@
 #include "stdint.h"
 #include "stm32g0xx_hal.h"
 
-extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim3;
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart2;
 

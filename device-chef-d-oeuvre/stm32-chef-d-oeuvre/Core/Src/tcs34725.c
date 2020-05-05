@@ -135,6 +135,9 @@ void tcs34725_get_RGBC_Data(uint16_t *rValue, uint16_t *gValue, uint16_t *bValue
 void tcs34725_get_RGB_Values(float *redColor, float *greenColor, float *blueColor)
 {
 	uint16_t redValue = 0, greenValue = 0, blueValue = 0, clearValue = 0;
+	//
+	tcs32725_init();
+	//
 	tcs34725_get_RGBC_Data(&redValue, &greenValue, &blueValue, &clearValue);
 
 	// Division by zero
@@ -157,16 +160,16 @@ void tcs34725_get_RGB_Values(float *redColor, float *greenColor, float *blueColo
  */
 void tcs34725_see_rgbLED(uint16_t redColor, uint16_t greenColor, uint16_t blueColor)
 {
-	HAL_TIM_PWM_Start (&htim1, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start (&htim1, TIM_CHANNEL_2);
-	HAL_TIM_PWM_Start (&htim1, TIM_CHANNEL_3);
+	HAL_TIM_PWM_Start (&htim3, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start (&htim3, TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start (&htim3, TIM_CHANNEL_3);
 	////////
-	__HAL_TIM_SET_COMPARE( &htim1, TIM_CHANNEL_1, redColor );//Red LED "ON"
-	__HAL_TIM_SET_COMPARE( &htim1, TIM_CHANNEL_2, greenColor );//Green LED "ON"
-	__HAL_TIM_SET_COMPARE( &htim1, TIM_CHANNEL_3, blueColor );//Blue LED "ON"
+	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_1, redColor );//Red LED "ON"
+	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_2, greenColor );//Green LED "ON"
+	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_3, blueColor );//Blue LED "ON"
 	  HAL_Delay(3000);
-	__HAL_TIM_SET_COMPARE( &htim1, TIM_CHANNEL_1, 0 );//Red LED "OFF"
-	__HAL_TIM_SET_COMPARE( &htim1, TIM_CHANNEL_2, 0 );
-	__HAL_TIM_SET_COMPARE( &htim1, TIM_CHANNEL_3, 0 );
+	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_1, 0 );//Red LED "OFF"
+	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_2, 0 );
+	__HAL_TIM_SET_COMPARE( &htim3, TIM_CHANNEL_3, 0 );
 
 }
