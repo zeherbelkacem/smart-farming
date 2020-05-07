@@ -11,6 +11,7 @@ xxxxxxxxxxxxxx
 xxxxxxxxxxxxxxx
 
 ## 2- Initial global scheme
+![Semantic description of image](/images/initial-global-scheme.png "Initial global scheme")
 
 ## 3- Initial technical scheme
 ![Semantic description of image](/images/initial-wiring-scheme.png "Initial wiring scheme")
