@@ -13,6 +13,8 @@ xxxxxxxxxxxxxxx
 ## 2- Initial global scheme
 
 ## 3- Initial technical scheme
+![Semantic description of image](/images/initial-wiring-scheme.png "Initial wiring scheme")
+
 
 ## 4- Firmware
 
