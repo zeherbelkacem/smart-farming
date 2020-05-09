@@ -24,9 +24,12 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include "math.h"//rand
+#include "stdlib.h"//malloc
 #include "dbg.h"
 #include "tcs34725.h" //RGB Color Sensor
 #include "dht11.h" // Humidity & Temperature sensor
+#include "mh_sensor_series.h" //Soil moisture
 #include "mh-water-sensor.h" //Water level sensor
 /* USER CODE END Includes */
 
@@ -37,6 +40,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define RXMAXBUFFERSIZE 512
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -56,9 +60,14 @@ UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+//uint32_t UIDw0[3];//, UIDw1, UIDw2;
+uint16_t rxIndex = 0;// To built the RX callback
+uint8_t rxTemp = 0;//
+char rxFromGateway[RXMAXBUFFERSIZE];//
+
 float realRed = 0.0, realGreen = 0.0, realBlue = 0.0; //RBB driver
 float airHumidity = 0.0, temperature = 0.0; //dht11 driver
-const char *waterLevel; //water driver
+const char *waterLevel, *moistureState; //water driver & soil moisture
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -127,17 +136,25 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+	  //Get water level and soil moisture state values
+	  HAL_ADC_Start(&hadc1);
+	  waterLevel = mh_water_get_value();
+	  dbg_log("water level %s\n", waterLevel);
+	  moistureState = moisture_state();
+	  dbg_log("moisture state %s\n", moistureState);
+	  HAL_ADC_Stop(&hadc1);
 
-	  tcs34725_get_RGB_Values(&realRed, &realGreen, &realBlue);
+
+	/*  tcs34725_get_RGB_Values(&realRed, &realGreen, &realBlue);
 	  printf("RED = %.2f, GREEN = %.2f, BLUE = %.2f\n", realRed, realGreen, realBlue);
-	  tcs34725_see_rgbLED(realRed, realGreen, realBlue);
+	  tcs34725_see_rgbLED(realRed, realGreen, realBlue);*/
 
 	 /* dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
 	  printf("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
 
 	  waterLevel = mh_water_get_value();
 	  printf("water level %s\n", waterLevel);*/
-	  HAL_Delay(500);
+	  HAL_Delay(3000);
   }
   /* USER CODE END 3 */
 }
@@ -190,7 +207,7 @@ void SystemClock_Config(void)
                               |RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_TIM1;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_PCLK1;
-  PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_SYSCLK;
+  PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_HSI;
   PeriphClkInit.Tim1ClockSelection = RCC_TIM1CLKSOURCE_PCLK1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
@@ -219,15 +236,15 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.LowPowerAutoWait = ENABLE;
   hadc1.Init.LowPowerAutoPowerOff = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.NbrOfConversion = 2;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
@@ -253,6 +270,15 @@ static void MX_ADC1_Init(void)
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Regular Channel 
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = ADC_REGULAR_RANK_2;
+  sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -538,6 +564,54 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(huart);
+
+  /* NOTE : This function should not be modified, when the callback is needed,
+            the HAL_UART_RxCpltCallback can be implemented in the user file.
+   */
+
+  if(rxIndex < (RXMAXBUFFERSIZE-1))
+  {
+	  if(((char)rxTemp == '\r') || ((char)rxTemp == '\n'))
+  	  {
+  		  rxFromGateway[rxIndex] = '\0';
+  		  if(strcmp((char *)rxFromGateway, "get data")==0)
+  		  {
+  			  HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
+  			  char *jsonString = malloc(512);
+  			  sprintf(jsonString,"{\"Id\": %d, \"Dt\": "
+  					  "{\"AH\": %.2f, \"Tp\": %.2f, \"Ms\": %.2f, "
+  					  "\"Pwr\": \"%s\", \"WL\": \"%s\", \"RGB\": [%d,%d,%d]}} ",
+  					  rand()%10, (float)(rand()%100) , (float)(rand()%100),
+					  (float)(rand()%100), "full", "empty", 0, 0, 0);
+  			  HAL_UART_Transmit(&huart3, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
+  			  HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
+  			  free(jsonString);
+  			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+  			  rxIndex = 0;
+  		  }
+  		  else
+  		  {
+  			  HAL_UART_Transmit(&huart3, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
+  			  //HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
+  			  rxIndex = 0;
+  		  }
+  	  }
+  	  else
+  	  {
+  		  rxFromGateway[rxIndex] = rxTemp;
+  		  rxIndex++;
+  	  }
+  }
+  HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
+ // else
+	//  rxIndex = 0;
+ // HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), 1000);
+
+}
 
 /* USER CODE END 4 */
 

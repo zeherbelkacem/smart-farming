@@ -9,6 +9,7 @@
 #define INC_MH_WATER_SENSOR_H_
 
 #include "stm32g0xx_hal.h"
+#include "stdio.h"
 
 
 extern ADC_HandleTypeDef hadc1;
