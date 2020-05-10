@@ -2,7 +2,7 @@
 
 #define THINGNAME "dht11" //the name of the your iot thing
 //Topics names
-const char MQTT_SUB_TOPIC[] = "iot/topic";//"$aws/things/dht11/shadow/update";
+const char MQTT_SUB_TOPIC[] = "inTopic";//"iot/topic";//"$aws/things/dht11/shadow/update";
 const char MQTT_PUB_TOPIC[] = "iot/topic";//"$aws/things/dht11/shadow/update";
 // Local wireless network
 const char* WIFI_SSID     = "Livebox-985F";

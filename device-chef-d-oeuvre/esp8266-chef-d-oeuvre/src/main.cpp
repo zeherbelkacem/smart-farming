@@ -7,22 +7,23 @@ extern "C" {
 #include "libb64/cdecode.h"
 }
 #include<string.h>
+#include<ctime>
 
 #define SOFTWBUFFCAPACITY 128
-
-//SoftwareSerial swSer(14, 12, false, 256);
+long int unix_timestamp();
 SoftwareSerial espRxTx(13, 15);// The esp8266 RX TX used to match with the nucleo bord 
 void callback(char* topic, byte* payload, unsigned int len);// to get message from AWS
 void connectToAws(); // to connect esp8266 to AWS core (mqtt protocol)
 void connectToWifi(); // connect esp8266 to the local wifi network
-String getRxdata(const char * request); //to get sensor data from Nucleo board 
+const char * getRxdata(const char * request); //to get sensor data from Nucleo board 
 void setCurrentTime(); // to be informed on the certification validation...
-void sendDatatoAws(String jsonData); // post data in json format to aws dynamodb
+void sendDatatoAws(const char * jsonData); // post data in json format to aws dynamodb
 int b64decode(String b64Text, uint8_t* output);
 WiFiClientSecure wiFiClient; //WIFI Client
 PubSubClient pubSubClient(AWS_IOT_ENDPOINT, 8883, callback, wiFiClient); //MQTT Client
 
-const char *requestPost = "get data\r"; //post request to the nucleo board
+//const char *requestPos = "get data\r"; //post request to the nucleo board
+//String requestPost = "";
 String rxData = ""; //get rxData as response (sensor data) from nucleo board 
 
 /*****==================================================================*****/
@@ -52,13 +53,19 @@ void setup() {
 
 /*****==================================================================*****/
 void loop() {
+  if(!pubSubClient.connected())
+  {
+    connectToAws();
+  }
+  pubSubClient.loop();
 
-  connectToAws();
+ 
   //if(//request from aws){
-  rxData = getRxdata(requestPost);
-  sendDatatoAws(rxData);
+ /* rxData = getRxdata(requestPos);
+  Serial.println(rxData);
+  sendDatatoAws(rxData); */
   //}
-  delay(2000); 
+    
 }
 
 /*****==================================================================*****/
@@ -78,83 +85,101 @@ void connectToAws() {
       pubSubClient.connect("dht11");
     }
     Serial.println(" connected");
-    pubSubClient.subscribe(MQTT_PUB_TOPIC);
+    pubSubClient.subscribe(MQTT_SUB_TOPIC);
   }
-  pubSubClient.loop();
+  //pubSubClient.loop();
 }
 
 /*****==================================================================*****/
-String getRxdata(const char * request)
+const char * getRxdata(const char * request)
 {
-  String resp = "";
-  espRxTx.write(request); //write a post to TX_PIN to get data
+  const char * resp ;
+  char rxBuffer[256] = {0};
+  int i = 0;
+   
+  espRxTx.write(request);
   while(espRxTx.available()>0) //
   {
-    resp += (char)espRxTx.read();//read() read from RX_PIN  character by character 
-    //Serial.write((char)espRxTx.read());
+    //read() read from RX_PIN  character by character 
+    rxBuffer[i] = (char)espRxTx.read();
+    i++;
   }
-  Serial.println(resp);
-  Serial.println(strlen(resp.c_str()));
+  //Serial.println(rxBuffer);
+  resp = rxBuffer;
   return resp;
 
 }
 
 /*****==================================================================*****/
-void sendDatatoAws(String jsonData)
-{ 
-  //The model we got from nucleo UART
- // String jsonData = "{\"Id\": 4, \"PT\": 602, \"Dt\": {\"AH\": 49.00, \"Tp\": 20.00, 
-  //\"Ms\": 56.00, \"Clr\": red, \"Gs\": 32.00, \"WL\": empty, \"RGB\": [0,0,0]}}"; 
+void sendDatatoAws(const char * jsonData)
+{
   
+  //The model we got from nucleo UART
+  // String jsonData = {"Id": 6619235, "Dt": {"AH": 33.00, "Tp": 43.00, "Ms": 62.00, "Pwr": 
+  //"full", "WL": "empty", "RGB": [0,0,0]}} 
+  
+
   DynamicJsonDocument doc(1024); //Allocate Json document 
   deserializeJson(doc, jsonData); //Deserialize the jsonData input (here a String)
   //Fetch values
-  int Id = doc["Id"];
-  int PT = doc["PT"];
+  int DevicId = doc["Id"];
   double AIrHumidity = doc["Dt"]["AH"];
   double Temperat = doc["Dt"]["Tp"];
   double Moistur = doc["Dt"]["Ms"];
-  String Colors = doc["Dt"]["Clr"];
-  double Gz = doc["Dt"]["Gs"];//Serial.println(Gz);
+  String Powe = doc["Dt"]["Pwr"];
   String WaterLev = doc["Dt"]["WL"];
   int r = doc["Dt"]["RGB"][0];
   int g = doc["Dt"]["RGB"][1];
   int b = doc["Dt"]["RGB"][2];
-
-  //Json document construction
-  JsonObject root = doc.to<JsonObject>();
-  root["DeviceId"] = Id;
-  root["PosixTime"] = PT; 
-  JsonObject Data = root.createNestedObject("Data");
-  Data["AirHumidity"] = AIrHumidity; 
-  Data["Temperature"] = Temperat; 
-  Data["Moisture"] = Moistur; 
-  Data["Color"] = Colors; 
-  Data["Gas"] = Gz; 
-  Data["WaterLevel"] = WaterLev; 
-  JsonArray RGB_Color = Data.createNestedArray("RGB_Color");
-  RGB_Color.add(r);
-  RGB_Color.add(g);
-  RGB_Color.add(b);
+  if(AIrHumidity!=0)
+  {
+    //Json document construction
+    JsonObject root = doc.to<JsonObject>();
+    root["DeviceId"] = DevicId + (rand()%6);//DevicId;
+    root["PosixTime"] = unix_timestamp(); 
+    JsonObject Data = root.createNestedObject("Data");
+    Data["AH"] = AIrHumidity; 
+    Data["Tp"] = Temperat; 
+    Data["Ms"] = Moistur; 
+    Data["Pw"] = Powe; 
+    Data["WL"] = WaterLev; 
+    JsonArray RGB_Color = Data.createNestedArray("RGB");
+    RGB_Color.add(r);
+    RGB_Color.add(g);
+    RGB_Color.add(b);
 
   
-  Serial.printf("Sending  [%s]: ", MQTT_PUB_TOPIC);
-  serializeJson(root, Serial); //Json doc serialisation
-  Serial.println();
-  char shadow[256];
-  serializeJson(root, shadow, sizeof(shadow));
-  if (!pubSubClient.publish(MQTT_PUB_TOPIC, shadow, false))// send json data to dynamoDbB topic
-  Serial.println("ERROR??? :"); Serial.println(pubSubClient.state()); //Connected '0'
-
+    Serial.printf("Sending  [%s]: ", MQTT_PUB_TOPIC);
+    serializeJson(root, Serial); //Json doc serialisation
+    Serial.println();
+    char shadow[256];
+      
+    serializeJson(root, shadow, sizeof(shadow));
+    if (!pubSubClient.publish(MQTT_PUB_TOPIC, shadow, false))// send json data to dynamoDbB topic
+    Serial.println("ERROR??? :"); Serial.println(pubSubClient.state()); //Connected '0'
+  }
 }
 
 /*****==================================================================*****/
 void callback(char* topic, byte* payload, unsigned int length) {
+  String  requestPost = "";
+  
   Serial.print("Message received on "); Serial.print(topic); Serial.print(": ");
   for (unsigned int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
+    requestPost+=  (char)payload[i];
   }
-  Serial.println();
+  
+  DynamicJsonDocument doc(128); //Allocate Json document 
+  deserializeJson(doc, requestPost); //Deserialize the jsonData input (here a String)
+  //Fetch values
+  const char* command = doc["command"];
+  const char *rxDat = getRxdata(command);
+  Serial.print("rxdata : ");
+  Serial.println(rxDat);
+  
+  sendDatatoAws(rxDat);
+
+  
 }
 
 /*****==================================================================*****/
@@ -179,4 +204,10 @@ void setCurrentTime() {
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
   Serial.print("Current time: "); Serial.print(asctime(&timeinfo));
+}
+long int unix_timestamp()
+{
+    time_t t = std::time(0);
+    long int now = static_cast<long int> (t);
+    return now;
 }

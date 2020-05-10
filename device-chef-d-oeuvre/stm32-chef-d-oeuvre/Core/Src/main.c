@@ -64,7 +64,7 @@ UART_HandleTypeDef huart3;
 uint32_t UIDw0 = 0, UIDw1 = 0, UIDw2 = 0; //for device uid
 uint16_t rxIndex = 0;// To built the RX callback
 uint8_t rxTemp = 0;//
-char rxFromGateway[RXMAXBUFFERSIZE];//
+char rxFromGateway[RXMAXBUFFERSIZE] = {0};//
 
 float realRed = 0.0, realGreen = 0.0, realBlue = 0.0; //RBB driver
 float airHumidity = 0.0, temperature = 0.0; //dht11 driver
@@ -581,10 +581,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   {
 	  if(((char)rxTemp == '\r') || ((char)rxTemp == '\n'))
   	  {
+		  HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
   		  rxFromGateway[rxIndex] = '\0';
   		  if(strcmp((char *)rxFromGateway, "get data")==0)
   		  {
-  			  HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
   			  char *jsonString = malloc(512);
   			  sprintf(jsonString,"{\"Id\": %lu, \"Dt\": "
   					  "{\"AH\": %.2f, \"Tp\": %.2f, \"Ms\": %.2f, "
@@ -592,9 +592,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   					  UIDw0, (float)(rand()%100) , (float)(rand()%100),
 					  (float)(rand()%100), "full", "empty", 0, 0, 0);
   			  HAL_UART_Transmit(&huart3, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
-  			  HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
+  			  //HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
   			  free(jsonString);
   			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+  			  memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
   			  rxIndex = 0;
   		  }
   		  else
