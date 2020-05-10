@@ -31,6 +31,7 @@
 #include "dht11.h" // Humidity & Temperature sensor
 #include "mh_sensor_series.h" //Soil moisture
 #include "mh-water-sensor.h" //Water level sensor
+#include "stm_uid.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,7 +61,7 @@ UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
-//uint32_t UIDw0[3];//, UIDw1, UIDw2;
+uint32_t UIDw0 = 0, UIDw1 = 0, UIDw2 = 0; //for device uid
 uint16_t rxIndex = 0;// To built the RX callback
 uint8_t rxTemp = 0;//
 char rxFromGateway[RXMAXBUFFERSIZE];//
@@ -68,6 +69,7 @@ char rxFromGateway[RXMAXBUFFERSIZE];//
 float realRed = 0.0, realGreen = 0.0, realBlue = 0.0; //RBB driver
 float airHumidity = 0.0, temperature = 0.0; //dht11 driver
 const char *waterLevel, *moistureState; //water driver & soil moisture
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -123,8 +125,8 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-
-
+  HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
+  //register uint32_t size_string = 0;
 
   /* USER CODE END 2 */
 
@@ -135,13 +137,15 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  get_mcu_uid(&UIDw0, &UIDw1, &UIDw2);
+	  //dbg_log("uidW0 = %lu, uidW0 = %lu, uidW0 = %lu", UIDw0, UIDw1, UIDw2);
 
 	  //Get water level and soil moisture state values
 	  HAL_ADC_Start(&hadc1);
 	  waterLevel = mh_water_get_value();
-	  dbg_log("water level %s\n", waterLevel);
+	  //dbg_log("water level %s\n", waterLevel);
 	  moistureState = moisture_state();
-	  dbg_log("moisture state %s\n", moistureState);
+	  //dbg_log("moisture state %s\n", moistureState);
 	  HAL_ADC_Stop(&hadc1);
 
 
@@ -582,10 +586,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		  {
   			  HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
   			  char *jsonString = malloc(512);
-  			  sprintf(jsonString,"{\"Id\": %d, \"Dt\": "
+  			  sprintf(jsonString,"{\"Id\": %lu, \"Dt\": "
   					  "{\"AH\": %.2f, \"Tp\": %.2f, \"Ms\": %.2f, "
   					  "\"Pwr\": \"%s\", \"WL\": \"%s\", \"RGB\": [%d,%d,%d]}} ",
-  					  rand()%10, (float)(rand()%100) , (float)(rand()%100),
+  					  UIDw0, (float)(rand()%100) , (float)(rand()%100),
 					  (float)(rand()%100), "full", "empty", 0, 0, 0);
   			  HAL_UART_Transmit(&huart3, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
   			  HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
