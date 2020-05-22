@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="description" content="">
+		<meta name="author" content="">
+		<title>Dashboard</title>
+		<!-- Bootstrap core CSS -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.6/nv.d3.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+		<!-- Custom styles for this template -->
+		<link href="narrow.css" rel="stylesheet">
+		<link href="vote.css" rel="stylesheet">
+	</head>
+	<body>
+		<div class="content">
+			<header>
+				<div class="header-background"></div>
+				<div class="title"><h1>Farming dashboard</h1>
+				<div id="button">
+					<button class="myButtonClass1">Get farming data</button>
+					<p> <img src="img/logo.png" alt="logo" /> </p>  
+					<button class="myButtonClass2">Irrigate</button>
+                </div>
+			</header>
+			<main>
+				<div class="chartContainer">
+					<div id="graphe" class="chart">
+						<div id="Temperature" class="chart">
+							<text class="chartTitle">Temperature</text>
+							<svg></svg>
+						</div>
+						<div id="Humidity" class="chart">
+							<text class="chartTitle">Humidity</text>
+							<svg></svg>
+						</div>
+						<div id="color" class="chart">
+							<text class="chartTitle">RGB olor</text>
+							<div class="row">
+								<div class="col-md-12"><canvas id="graph" class="inner cover" width="500" height="270"></canvas></div>
+							</div>
+						</div>
+						<div id="power" class="chart">
+							<text class="chartTitle">Power & water</text>
+							<div id="bar">
+								<h4>Water Level</h4>
+									<div id="progress1">
+										<span class="progress-text1"></span>
+										<div class="progress-bar1"></div>
+									</div>
+								<h4>Power Level</h4>
+									<div id="progress">
+										<span class="progress-text"></span>
+									<div class="progress-bar"></div>
+						</div>
+					</div>
+			
+				</div> <!--/graphe -->
+			</div> <!--/chartContainer -->
+		</main>
+	</div> <!-- /container -->
+	<footer class="footer">
+		<p id="p1">Belkacem ZEHER Dashboard's for Simplon Occitanie -Toulouse/Labège, le 27/05/2020</p>
+     </footer>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.40.min.js"></script>
+    <script src="https://cdn.rawgit.com/novus/nvd3/v1.8.1/build/nv.d3.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/wordcloud.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.6/nv.d3.js"></script>
+    <script src="chart.min.js"></script>
+    <script src="refresh.js"></script>
+  </body>
+</html>
+
