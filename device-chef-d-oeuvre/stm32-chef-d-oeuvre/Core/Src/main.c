@@ -32,6 +32,7 @@
 #include "mh_sensor_series.h" //Soil moisture
 #include "mh-water-sensor.h" //Water level sensor
 #include "stm_uid.h"
+#include "pump.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -137,6 +138,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  pump_action();
 	  get_mcu_uid(&UIDw0, &UIDw1, &UIDw2);
 	  //dbg_log("uidW0 = %lu, uidW0 = %lu, uidW0 = %lu", UIDw0, UIDw1, UIDw2);
 
@@ -552,6 +554,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : GPIO_DHT11_Pin */
   GPIO_InitStruct.Pin = GPIO_DHT11_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -564,6 +569,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_GREEN_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 }
 
