@@ -37,6 +37,14 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef enum {
+	LOOP,
+	GET_DATA,
+	IRRIGATE,
+	UPDATE_DEVICE,
+	GET_UID,
+	TIME_PERIOD
+} REQUEST_TYPE;
 
 /* USER CODE END PTD */
 
@@ -62,6 +70,7 @@ UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+static REQUEST_TYPE FLAG = LOOP;
 uint32_t UIDw0 = 0, UIDw1 = 0, UIDw2 = 0; //for device uid
 uint16_t rxIndex = 0;// To built the RX callback
 uint8_t rxTemp = 0;//
@@ -70,6 +79,7 @@ char rxFromGateway[RXMAXBUFFERSIZE] = {0};//
 float realRed = 0.0, realGreen = 0.0, realBlue = 0.0; //RBB driver
 float airHumidity = 0.0, temperature = 0.0; //dht11 driver
 const char *waterLevel, *moistureState; //water driver & soil moisture
+
 
 /* USER CODE END PV */
 
@@ -88,7 +98,32 @@ static void MX_TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void readSend_all_sensor_data()
+{
+	dbg_log("uidW0 = %lu, uidW0 = %lu, uidW0 = %lu", UIDw0, UIDw1, UIDw2);
+	HAL_ADC_Start(&hadc1);
+	waterLevel = mh_water_get_value();
+	dbg_log("water level %s\n", waterLevel);
+	moistureState = moisture_state();
+	dbg_log("moisture state %s\n", moistureState);
+	HAL_ADC_Stop(&hadc1);
 
+	tcs34725_get_RGB_Values(&realRed, &realGreen, &realBlue);
+	dbg_log("RED = %.2f, GREEN = %.2f, BLUE = %.2f\n", realRed, realGreen, realBlue);
+	tcs34725_see_rgbLED(realRed, realGreen, realBlue);
+
+	 dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
+	 dbg_log("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
+
+	 char *jsonString = malloc(512);
+	   			  sprintf(jsonString,"{\"Id\": %lu, \"Dt\": "
+	   					  "{\"AH\": %.2f, \"Tp\": %.2f, \"Ms\": %s, "
+	   					  "\"Pwr\": \"%s\", \"WL\": \"%s\", \"RGB\": [%.2f,%.2f,%.2f]}} ",
+	   					  UIDw0, airHumidity , temperature,
+	 					  moistureState, "full", waterLevel, realRed, realGreen, realBlue);
+	   			  HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
+	   			  free(jsonString);
+}
 /* USER CODE END 0 */
 
 /**
@@ -126,7 +161,10 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
+  get_mcu_uid(&UIDw0, &UIDw1, &UIDw2);
+
+  HAL_UART_Receive_IT(&huart2, (uint8_t *)&rxTemp, 1);//test on serial monitor
+  //HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
   //register uint32_t size_string = 0;
 
   /* USER CODE END 2 */
@@ -138,29 +176,31 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  pump_action();
-	  get_mcu_uid(&UIDw0, &UIDw1, &UIDw2);
-	  //dbg_log("uidW0 = %lu, uidW0 = %lu, uidW0 = %lu", UIDw0, UIDw1, UIDw2);
-
-	  //Get water level and soil moisture state values
-	  HAL_ADC_Start(&hadc1);
-	  waterLevel = mh_water_get_value();
-	  //dbg_log("water level %s\n", waterLevel);
-	  moistureState = moisture_state();
-	  //dbg_log("moisture state %s\n", moistureState);
-	  HAL_ADC_Stop(&hadc1);
-
-
-	/*  tcs34725_get_RGB_Values(&realRed, &realGreen, &realBlue);
-	  printf("RED = %.2f, GREEN = %.2f, BLUE = %.2f\n", realRed, realGreen, realBlue);
-	  tcs34725_see_rgbLED(realRed, realGreen, realBlue);*/
-
-	 /* dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
-	  printf("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
-
-	  waterLevel = mh_water_get_value();
-	  printf("water level %s\n", waterLevel);*/
+	  readSend_all_sensor_data();
 	  HAL_Delay(3000);
+	  switch (FLAG) {
+	  		case IRRIGATE:
+	  			pump_action();
+	  			FLAG = LOOP;
+	  			break;
+	  		case GET_DATA:
+	  			readSend_all_sensor_data();
+	  			FLAG = LOOP;
+	  			break;
+	  		case TIME_PERIOD:
+	  			//todo
+	  			FLAG = LOOP;
+	  			break;
+	  		case UPDATE_DEVICE:
+	  			//todo
+	  			FLAG = LOOP;
+	  			break;
+	  		default:
+	  			break;
+	  }
+
+
+
   }
   /* USER CODE END 3 */
 }
@@ -580,6 +620,9 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+/*
+ *Waiting for Rx message and do the corresponding actions
+ */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   /* Prevent unused argument(s) compilation warning */
@@ -595,24 +638,22 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   	  {
 		  HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
   		  rxFromGateway[rxIndex] = '\0';
-  		  if(strcmp((char *)rxFromGateway, "get data")==0)
+  		  if(strcmp((char *)rxFromGateway, "get data") ==0 )
   		  {
-  			  char *jsonString = malloc(512);
-  			  sprintf(jsonString,"{\"Id\": %lu, \"Dt\": "
-  					  "{\"AH\": %.2f, \"Tp\": %.2f, \"Ms\": %.2f, "
-  					  "\"Pwr\": \"%s\", \"WL\": \"%s\", \"RGB\": [%d,%d,%d]}} ",
-  					  UIDw0, (float)(rand()%100) , (float)(rand()%100),
-					  (float)(rand()%100), "full", "empty", 0, 0, 0);
-  			  HAL_UART_Transmit(&huart3, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
-  			  //HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
-  			  free(jsonString);
+  			  FLAG = GET_DATA;
   			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
   			  memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
   			  rxIndex = 0;
   		  }
+  		  else if(strcmp((char*)rxFromGateway, "irrigate") == 0)
+  		  {
+  			  FLAG = IRRIGATE;
+  			  memset(rxFromGateway, 0, RXMAXBUFFERSIZE);
+  			  rxIndex = 0;
+  		  }
   		  else
   		  {
-  			  HAL_UART_Transmit(&huart3, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
+  			  HAL_UART_Transmit(&huart2, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
   			  //HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
   			  rxIndex = 0;
   		  }
@@ -623,7 +664,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		  rxIndex++;
   	  }
   }
-  HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
+  HAL_UART_Receive_IT(&huart2, (uint8_t *)&rxTemp, 1);
  // else
 	//  rxIndex = 0;
  // HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), 1000);
