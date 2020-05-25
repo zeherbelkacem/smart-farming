@@ -33,18 +33,12 @@
 #include "mh-water-sensor.h" //Water level sensor
 #include "stm_uid.h"
 #include "pump.h"
+#include "timer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef enum {
-	LOOP,
-	GET_DATA,
-	IRRIGATE,
-	UPDATE_DEVICE,
-	GET_UID,
-	TIME_PERIOD
-} REQUEST_TYPE;
+
 
 /* USER CODE END PTD */
 
@@ -64,13 +58,14 @@ ADC_HandleTypeDef hadc1;
 I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
-static REQUEST_TYPE FLAG = LOOP;
+REQUEST_TYPE FLAG = CYCLE;
 uint32_t UIDw0 = 0, UIDw1 = 0, UIDw2 = 0; //for device uid
 uint16_t rxIndex = 0;// To built the RX callback
 uint8_t rxTemp = 0;//
@@ -92,6 +87,7 @@ static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -124,6 +120,7 @@ void readSend_all_sensor_data()
 	   			  HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
 	   			  free(jsonString);
 }
+
 /* USER CODE END 0 */
 
 /**
@@ -160,12 +157,14 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_TIM3_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  timer_start(&htim2);
   get_mcu_uid(&UIDw0, &UIDw1, &UIDw2);
 
   HAL_UART_Receive_IT(&huart2, (uint8_t *)&rxTemp, 1);//test on serial monitor
   //HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
-  //register uint32_t size_string = 0;
+
 
   /* USER CODE END 2 */
 
@@ -176,31 +175,31 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  readSend_all_sensor_data();
-	  HAL_Delay(3000);
 	  switch (FLAG) {
-	  		case IRRIGATE:
-	  			pump_action();
-	  			FLAG = LOOP;
-	  			break;
-	  		case GET_DATA:
-	  			readSend_all_sensor_data();
-	  			FLAG = LOOP;
-	  			break;
-	  		case TIME_PERIOD:
-	  			//todo
-	  			FLAG = LOOP;
-	  			break;
-	  		case UPDATE_DEVICE:
-	  			//todo
-	  			FLAG = LOOP;
-	  			break;
-	  		default:
-	  			break;
+	  	  case PERIODIC_DATA:
+	  		  printf("periodic data %lu", HAL_GetTick());
+	  		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	  		  readSend_all_sensor_data();
+	  		  FLAG = CYCLE;//wait
+		  break;
+		  case IRRIGATE:
+			  pump_action();
+			  FLAG = CYCLE;
+			  break;
+		  case REQUEST_DATA:
+			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+			  readSend_all_sensor_data();
+			  FLAG = CYCLE;
+			  break;
+		  case CYCLE:
+			  break;
+		  case GET_UID:
+	  		  break;
+	  	  case TIME_PERIOD:
+			  break;
+	  	  case UPDATE_DEVICE:
+	  		  break;
 	  }
-
-
-
   }
   /* USER CODE END 3 */
 }
@@ -436,6 +435,51 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 64-1;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 50000-1;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief TIM3 Initialization Function
   * @param None
   * @retval None
@@ -636,12 +680,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   {
 	  if(((char)rxTemp == '\r') || ((char)rxTemp == '\n'))
   	  {
-		  HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
+		 // HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
   		  rxFromGateway[rxIndex] = '\0';
-  		  if(strcmp((char *)rxFromGateway, "get data") ==0 )
+  		  if(strcmp((char *)rxFromGateway, "get data") == 0 )
   		  {
-  			  FLAG = GET_DATA;
-  			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+  			  FLAG = REQUEST_DATA;
   			  memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
   			  rxIndex = 0;
   		  }
