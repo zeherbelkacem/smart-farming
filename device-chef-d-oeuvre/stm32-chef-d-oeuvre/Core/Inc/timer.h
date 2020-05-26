@@ -21,7 +21,7 @@
 
 #define CYCLE_TIM			 TIM2
 #define CYCLE_HANDLER		 htim2
-#define CYCLE_VALUE 1
+#define CYCLE_VALUE 1.5
 
 /* Exported types ------------------------------------------------------------*/
 

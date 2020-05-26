@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include <time.h>
 #include "math.h"//rand
 #include "stdlib.h"//malloc
 #include "dbg.h"
@@ -65,6 +66,7 @@ UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+
 REQUEST_TYPE FLAG = CYCLE;
 uint32_t UIDw0 = 0, UIDw1 = 0, UIDw2 = 0; //for device uid
 uint16_t rxIndex = 0;// To built the RX callback
@@ -99,26 +101,32 @@ void readSend_all_sensor_data()
 	dbg_log("uidW0 = %lu, uidW0 = %lu, uidW0 = %lu", UIDw0, UIDw1, UIDw2);
 	HAL_ADC_Start(&hadc1);
 	waterLevel = mh_water_get_value();
-	dbg_log("water level %s\n", waterLevel);
+	dbg_log("water level: %s\n", waterLevel);
 	moistureState = moisture_state();
-	dbg_log("moisture state %s\n", moistureState);
+	dbg_log("moisture state: %s\n", moistureState);
 	HAL_ADC_Stop(&hadc1);
 
 	tcs34725_get_RGB_Values(&realRed, &realGreen, &realBlue);
-	dbg_log("RED = %.2f, GREEN = %.2f, BLUE = %.2f\n", realRed, realGreen, realBlue);
+	dbg_log("RED = %d, GREEN = %d, BLUE = %d\n", (int) realRed, (int)realGreen, (int)realBlue);
 	tcs34725_see_rgbLED(realRed, realGreen, realBlue);
 
-	 dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
-	 dbg_log("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
+	 //dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
+	 //dbg_log("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
 
-	 char *jsonString = malloc(512);
-	   			  sprintf(jsonString,"{\"Id\": %lu, \"Dt\": "
-	   					  "{\"AH\": %.2f, \"Tp\": %.2f, \"Ms\": %s, "
-	   					  "\"Pwr\": \"%s\", \"WL\": \"%s\", \"RGB\": [%.2f,%.2f,%.2f]}} ",
-	   					  UIDw0, airHumidity , temperature,
-	 					  moistureState, "full", waterLevel, realRed, realGreen, realBlue);
+	 char jsonString[512];//= malloc(512);
+	   			/*  sprintf(jsonString,"{\"Id\": %lu, \"Dt\": " "{\"AH\": %.2f, \"Tp\": %.2f,"
+	   					  	  	  	 " \"Ms\": %s, " "\"Pwr\": \"%s\", \"WL\": \"%s\", "
+	   					  	  	  	 "\"RGB\": [%d, %d, %d]}} ",
+									 UIDw0, 60.0 , 20., moistureState, "full", waterLevel,
+									 (int)realRed, (int)realGreen, (int)realBlue);*/
+	   			sprintf(jsonString,"{\"Id\": %lu, \"AH\": %.2f, \"Tp\": %.2f,  \"Ms\": \"%s\","
+	   					" \"Pwr\": \"%s\", \"WL\": \"%s\", \"R\": \"%d\", \"G\":%d, \"B\": %d} '\n'",
+	   												 UIDw0, 60.0 , 20., moistureState, "full", waterLevel,
+	   												 (int)realRed, (int)realGreen, (int)realBlue);
+	   			  HAL_UART_Transmit(&huart3, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
 	   			  HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
-	   			  free(jsonString);
+	   			 // free(jsonString);
+	   			  HAL_Delay(100);
 }
 
 /* USER CODE END 0 */
@@ -147,6 +155,7 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -161,7 +170,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   timer_start(&htim2);
   get_mcu_uid(&UIDw0, &UIDw1, &UIDw2);
-
   HAL_UART_Receive_IT(&huart2, (uint8_t *)&rxTemp, 1);//test on serial monitor
   //HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
 
@@ -175,6 +183,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
 	  switch (FLAG) {
 	  	  case PERIODIC_DATA:
 	  		  printf("periodic data %lu", HAL_GetTick());
@@ -201,6 +210,7 @@ int main(void)
 	  		  break;
 	  }
   }
+
   /* USER CODE END 3 */
 }
 
@@ -639,7 +649,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, 1);
 
   /*Configure GPIO pin : GPIO_DHT11_Pin */
   GPIO_InitStruct.Pin = GPIO_DHT11_Pin;
@@ -654,12 +664,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_GREEN_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PC7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  /*Configure GPIO pin : PB3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 
@@ -680,26 +690,30 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   {
 	  if(((char)rxTemp == '\r') || ((char)rxTemp == '\n'))
   	  {
-		 // HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
-  		  rxFromGateway[rxIndex] = '\0';
-  		  if(strcmp((char *)rxFromGateway, "get data") == 0 )
+		  //printf("received request: ");
+		  //HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
+  		 // rxFromGateway[rxIndex] = '\0';
+  		  if(strcmp(rxFromGateway, "get data") == 0 )
   		  {
   			  FLAG = REQUEST_DATA;
-  			  memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
-  			  rxIndex = 0;
+  			  //memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
+  			  rxFromGateway[0] = '\0';
+
   		  }
-  		  else if(strcmp((char*)rxFromGateway, "irrigate") == 0)
+  		  else if(strcmp(rxFromGateway, "irrigate") == 0)
   		  {
   			  FLAG = IRRIGATE;
-  			  memset(rxFromGateway, 0, RXMAXBUFFERSIZE);
-  			  rxIndex = 0;
+  			  //memset(rxFromGateway, 0, RXMAXBUFFERSIZE);
+  			rxFromGateway[0] = '\0';
+
   		  }
   		  else
   		  {
-  			  HAL_UART_Transmit(&huart2, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
+  			  HAL_UART_Transmit(&huart3, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
   			  //HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
-  			  rxIndex = 0;
+
   		  }
+  		rxIndex = 0;
   	  }
   	  else
   	  {
@@ -707,7 +721,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		  rxIndex++;
   	  }
   }
-  HAL_UART_Receive_IT(&huart2, (uint8_t *)&rxTemp, 1);
+  HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
  // else
 	//  rxIndex = 0;
  // HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), 1000);
