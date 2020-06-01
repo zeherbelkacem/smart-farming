@@ -10,8 +10,8 @@
 
 
 /*******DEFINES**********/
-#define TIME_OUT 1000 /*100 ms time out for text out put*/
-#define TIME_IN 1000 /*10 ms time in for char input*/
+#define TIME_OUT 1000 /*1000 ms time out for text out put*/
+#define TIME_IN 1000 /*1000 ms time in for char input*/
 #define MSG_SIZE 255
 #define TAG_SIZE 255
 

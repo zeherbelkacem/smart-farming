@@ -113,20 +113,15 @@ void readSend_all_sensor_data()
 	 //dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
 	 //dbg_log("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
 
-	 char jsonString[512];//= malloc(512);
-	   			/*  sprintf(jsonString,"{\"Id\": %lu, \"Dt\": " "{\"AH\": %.2f, \"Tp\": %.2f,"
-	   					  	  	  	 " \"Ms\": %s, " "\"Pwr\": \"%s\", \"WL\": \"%s\", "
-	   					  	  	  	 "\"RGB\": [%d, %d, %d]}} ",
-									 UIDw0, 60.0 , 20., moistureState, "full", waterLevel,
-									 (int)realRed, (int)realGreen, (int)realBlue);*/
-	   			sprintf(jsonString,"{\"Id\": %lu, \"AH\": %.2f, \"Tp\": %.2f,  \"Ms\": \"%s\","
-	   					" \"Pwr\": \"%s\", \"WL\": \"%s\", \"R\": \"%d\", \"G\":%d, \"B\": %d} '\n'",
-	   												 UIDw0, 60.0 , 20., moistureState, "full", waterLevel,
-	   												 (int)realRed, (int)realGreen, (int)realBlue);
-	   			  HAL_UART_Transmit(&huart3, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
-	   			  HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
-	   			 // free(jsonString);
-	   			  HAL_Delay(100);
+	 char *jsonString = malloc(512);
+	 sprintf(jsonString,"{\"Id\": %lu, \"AH\": %.2f, \"Tp\": %.2f,  \"Ms\": \"%s\","
+	   					" \"Pwr\": \"%s\", \"WL\": \"%s\", \"R\": \"%d\", \"G\":%d, \"B\": %d} ",
+	   					UIDw0, 60.0 , 20.0, moistureState, "full", waterLevel,
+	   					(int)realRed, (int)realGreen, (int)realBlue);
+	 HAL_UART_Transmit(&huart3, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
+	// HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
+	 free(jsonString);
+
 }
 
 /* USER CODE END 0 */
@@ -170,8 +165,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   timer_start(&htim2);
   get_mcu_uid(&UIDw0, &UIDw1, &UIDw2);
-  HAL_UART_Receive_IT(&huart2, (uint8_t *)&rxTemp, 1);//test on serial monitor
-  //HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
+  //HAL_UART_Receive_IT(&huart2, (uint8_t *)&rxTemp, 1);//test on serial monitor
+  HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
 
 
   /* USER CODE END 2 */
@@ -186,8 +181,8 @@ int main(void)
 
 	  switch (FLAG) {
 	  	  case PERIODIC_DATA:
-	  		  printf("periodic data %lu", HAL_GetTick());
-	  		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	  		//  printf("periodic data %lu", HAL_GetTick());
+	  		  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 	  		  readSend_all_sensor_data();
 	  		  FLAG = CYCLE;//wait
 		  break;
@@ -196,7 +191,7 @@ int main(void)
 			  FLAG = CYCLE;
 			  break;
 		  case REQUEST_DATA:
-			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+			  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 			  readSend_all_sensor_data();
 			  FLAG = CYCLE;
 			  break;
@@ -649,7 +644,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, 1);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
 
   /*Configure GPIO pin : GPIO_DHT11_Pin */
   GPIO_InitStruct.Pin = GPIO_DHT11_Pin;
@@ -668,7 +663,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
@@ -690,29 +685,28 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   {
 	  if(((char)rxTemp == '\r') || ((char)rxTemp == '\n'))
   	  {
-		  //printf("received request: ");
-		  //HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
-  		 // rxFromGateway[rxIndex] = '\0';
+		  rxFromGateway[rxIndex] = '\0';
   		  if(strcmp(rxFromGateway, "get data") == 0 )
   		  {
   			  FLAG = REQUEST_DATA;
-  			  //memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
-  			  rxFromGateway[0] = '\0';
+  			  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+  			 // memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
+  			  //rxFromGateway[0] = '\0';
 
   		  }
   		  else if(strcmp(rxFromGateway, "irrigate") == 0)
   		  {
   			  FLAG = IRRIGATE;
-  			  //memset(rxFromGateway, 0, RXMAXBUFFERSIZE);
-  			rxFromGateway[0] = '\0';
+
+  			//rxFromGateway[0] = '\0';
 
   		  }
   		  else
   		  {
-  			  HAL_UART_Transmit(&huart3, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
-  			  //HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), TIME_OUT);
-
+  			 // HAL_UART_Transmit(&huart3, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
+  			  HAL_UART_Transmit(&huart2, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
   		  }
+		memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
   		rxIndex = 0;
   	  }
   	  else
@@ -722,9 +716,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   	  }
   }
   HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
- // else
-	//  rxIndex = 0;
- // HAL_UART_Transmit(&huart2, (uint8_t *)rxFromGateway, strlen(rxFromGateway), 1000);
 
 }
 

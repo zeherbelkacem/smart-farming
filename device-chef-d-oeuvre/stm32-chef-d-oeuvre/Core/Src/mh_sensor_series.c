@@ -9,8 +9,9 @@
 /*****INCLUDES*****/
 #include "mh_sensor_series.h"
 #include "dbg.h"
+#include "main.h"
 
-
+extern REQUEST_TYPE FLAG;
 extern ADC_HandleTypeDef hadc1;//mh sensor serie (moisture) (MHSS) signal must be connected to A1 pin in order to respect rank configuartion
 							   //Because in the code the MHSS is the second called
 
@@ -26,9 +27,12 @@ const char *moisture_state()
 	const char *moistureState;
 
 	if(soilMoistureRate >= 90. || soilMoistureRate<3.)
-		moistureState = "out";
+		moistureState = "disconnected";
 	else if(soilMoistureRate < 90. && soilMoistureRate >= 60. )
+	{
 		moistureState = "dry";
+		FLAG = IRRIGATE;
+	}
 	else if(soilMoistureRate < 60. && soilMoistureRate >= 37. )
 		moistureState = "humid";
 	else
