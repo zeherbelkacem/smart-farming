@@ -116,8 +116,23 @@ received from a device to an Amazon DynamoDB:
 
 ##### 2. **get-data-lambda-function**: To publish a message action (get data from device) in a desired topic where device is subcribing 
 * **Create** a new lambda function, **name** it, **python 3.6** for **Runtime** and **default role** for lambda **role**
-* Copy the python code content from [get-data.py]() file and paste it lambda functio and in service, select **IoT**n code section
-* Select **Authorizations** and press **the created lambda role**
+* Copy the following python code content and paste it lambda functio code section 
+```
+import boto3
+import json
+
+def lambda_handler(event, context):
+        client = boto3.client('iot-data', region_name='eu-west-2')
+        
+        # Change topic, qos and payload
+        response = client.publish(
+                topic='irrigateTopic',
+                qos=1,
+                payload=json.dumps({"command":"irrigate\r"})
+            )`
+```
+
+* Select **Authorizations** and press **the created lambda role** and in service, select **IoT** 
 * Press add a **new inline policy** and in service, select **IoT**
 * Open **write** and check **publish** 
 * For **ARN**, add the **region** (eu-west-2) and give the name of your desired **topic** (irrigateTopic for me), the press **add**
