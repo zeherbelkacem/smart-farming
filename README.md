@@ -29,8 +29,10 @@ For this section, we'll need the following steps:
 Go to: [Aws IoT Console ](https://aws.amazon.com/fr/console/)
 
 ### 2. **Create thing** 
+
 > AWS IoT is used to communicate with the your board (**Nucleo-G071rb** in my case) as well as process data coming from the device. Data is automatically processed by AWS IoT Rules Engine.
 > To connect our device to the AWS IoT (in my case, i used **MQTT** Protocole), at least, we need 4 elements (use case in **GateWay** section):
+
 1. Thing Certificate (ends with .pem.crt)
 1. Private key security (ends with.key)
 1. A root CA key (ends with .pem)
@@ -47,9 +49,11 @@ On the left column, proceed as follows:
 * Press **Attach a policy** and **Save thing**
 >Communication between your device and AWS IoT Core is protected through the use of X.509 certificates. AWS IoT Core can generate a certificate for you or you can use your own X.509 certificate.
 In my case, I used AWS IoT Core's X.509 certificate. Certificates must be activated prior to use. 
+
 ![Semantic description of image](/images/aws-certificates.png "AWS Certificates")  
+
 * On the left column, press **Security** then **Policy**, **Create**
-* Give **name** policy, for _action_: **iot:*, for _ressources ARN_:***** and press **Create**
+* Give **name** policy, for _action_: **iot:*, for _ressources ARN_: * and press **Create**
 * On the left column, press **Security** then **Certificats**, and choose the certificat previuosly created
 * For the certificat, **Attach** the **policy** and the **thing** newly created
 * On the left column, go to **manage**/**thing** and chosse your created thing
@@ -59,9 +63,11 @@ In my case, I used AWS IoT Core's X.509 certificate. Certificates must be activa
 > For more details, see: [Create thing and and register a device ](https://docs.aws.amazon.com/iot/latest/developerguide/create-aws-thing.html)
 
 ### 3. **Configure rules** 
+
 > The AWS IoT rules engine listens for incoming (from the device) MQTT messages that match a rule. When a matching message is received, the rule takes some action
 with the data in the MQTT message (in this project :writing (INSERT) data to an Amazon DynamonDB). In this step, you create and configure a rule to send the data 
 received from a device to an Amazon DynamoDB:
+
 * On the left colunm of your IoT Core, go to **Act** and **rules** then **Create**
 * Give a **name** rule, and **description** (optional)
 * Choose a **Topic** name where the rule is listening (subcribing) when messages comming from the device (publishing)
@@ -69,11 +75,17 @@ received from a device to an Amazon DynamoDB:
 * Press **Add an action**, choose the first list action **Insert data in dynamodDB Table** and press **Configure an action**
 * Select your table, in the **Partion key value** put **${your parttion Key}** and in the **sort key value** put **${your sort key value}**
 * For **write message data**, put **payload**, for **operation**, put **INSERT** and press **Create a role**
+
 ![Semantic description of image](/images/aws-action.png "aws-action")
+
 * Give a name role, press **Create role**, press **add action** and finaly press **Create rule**
+* 
 > for more details, see [aws dynamodb rule](https://docs.aws.amazon.com/iot/latest/developerguide/iot-ddb-rule.html)
+
 ### 4. **Create dynamonDB table(s)**
+
 > I need two tables for this project:
+
 1. **weathermap**: to store weather data fetched from **openweathermap.com**
 2. **final_project**: to store sensors data of device the device 
 > Go to amozon **Services** and select **Dynamodb**, then **Create a new Table**.
@@ -81,6 +93,7 @@ received from a device to an Amazon DynamoDB:
 ### 5. **Build lambda functions and API Gateway(s)**
 
 > Three lambda functions were built for this project:
+
 ##### 1. **fetchweather-lambda function**: To fetch weather data from openweathermap.com and store the data in dynamoDB (triggered with a periodic AWS **CloudWatch** alarm)
 #### Step 1 -Create lambda function-
 * Go to amozon **Services**, select **Lambda**, **Create a function** and by default **Create from zero**
