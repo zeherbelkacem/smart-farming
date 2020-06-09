@@ -24,19 +24,28 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include <time.h>
+#include "math.h"//rand
+#include "stdlib.h"//malloc
 #include "dbg.h"
 #include "tcs34725.h" //RGB Color Sensor
 #include "dht11.h" // Humidity & Temperature sensor
+#include "mh_sensor_series.h" //Soil moisture
 #include "mh-water-sensor.h" //Water level sensor
+#include "stm_uid.h"
+#include "pump.h"
+#include "timer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define RXMAXBUFFERSIZE 512
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,15 +59,29 @@ ADC_HandleTypeDef hadc1;
 I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+
+REQUEST_TYPE FLAG = CYCLE;
+uint32_t UIDw0 = 0, UIDw1 = 0, UIDw2 = 0; //for device uid
+uint16_t rxIndex = 0;// To built the RX callback
+uint8_t rxTemp = 0;//
+char rxFromGateway[RXMAXBUFFERSIZE] = {0};//
+
 float realRed = 0.0, realGreen = 0.0, realBlue = 0.0; //RBB driver
 float airHumidity = 0.0, temperature = 0.0; //dht11 driver
-const char *waterLevel; //water driver
+const char *waterLevel, *moistureState; //water driver & soil moisture
+uint32_t start_time;
+uint32_t stop_time;
+uint32_t periodic_time;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,12 +93,41 @@ static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM2_Init(void);
+static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void readSend_all_sensor_data()
+{
+	dbg_log("uidW0 = %lu, uidW0 = %lu, uidW0 = %lu", UIDw0, UIDw1, UIDw2);
+	HAL_ADC_Start(&hadc1);
+	waterLevel = mh_water_get_value();
+	dbg_log("water level: %s\n", waterLevel);
+	moistureState = moisture_state();
+	dbg_log("moisture state: %s\n", moistureState);
+	HAL_ADC_Stop(&hadc1);
+
+	tcs34725_get_RGB_Values(&realRed, &realGreen, &realBlue);
+	dbg_log("RED = %d, GREEN = %d, BLUE = %d\n", (int) realRed, (int)realGreen, (int)realBlue);
+	tcs34725_see_rgbLED(realRed, realGreen, realBlue);
+
+	 //dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
+	 //dbg_log("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
+
+	 char *jsonString = malloc(512);
+	 sprintf(jsonString,"{\"Id\": %lu, \"AH\": %.2f, \"Tp\": %.2f,  \"Ms\": \"%s\","
+	   					" \"Pwr\": \"%s\", \"WL\": \"%s\", \"R\": \"%d\", \"G\":%d, \"B\": %d} ",
+	   					UIDw0, 60.0 , 20.0, moistureState, "full", waterLevel,
+	   					(int)realRed, (int)realGreen, (int)realBlue);
+	 HAL_UART_Transmit(&huart3, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
+	// HAL_UART_Transmit(&huart2, (uint8_t *)jsonString, strlen(jsonString), TIME_OUT);
+	 free(jsonString);
+
+}
 
 /* USER CODE END 0 */
 
@@ -103,6 +155,7 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -113,8 +166,14 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_TIM3_Init();
+  MX_TIM2_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
-
+  timer_start(&htim2);
+  get_mcu_uid(&UIDw0, &UIDw1, &UIDw2);
+  //HAL_UART_Receive_IT(&huart2, (uint8_t *)&rxTemp, 1);//test on serial monitor
+  periodic_time = HAL_GetTick();
+  HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
 
 
   /* USER CODE END 2 */
@@ -127,18 +186,38 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+	  switch (FLAG) {
+	  	  case PERIODIC_DATA:
+	  		  printf("periodic data %lu\n", HAL_GetTick() - periodic_time );
+	  		  periodic_time = HAL_GetTick();
+	  		  readSend_all_sensor_data();
+	  		  FLAG = CYCLE;//wait
+		  break;
+		  case IRRIGATE:
+			  pump_action_start();
+			  timer_start(&SINGLE_HANDLER);
+			  start_time = HAL_GetTick();
+			 // printf(" START TIME %lu", start_time);
+			  FLAG = CYCLE;
+			  break;
+		  case STOP_PUMP:
+			 pump_action_stop();
+			 timer_stop(&SINGLE_HANDLER);
+			 stop_time = HAL_GetTick();
+			 //printf(" STOP TIME %lu", stop_time);
+			 printf(" PUMP TIME %lu\n", stop_time-start_time);
+			 FLAG = CYCLE;
+			  break;
+		  case REQUEST_DATA:
+			  readSend_all_sensor_data();
+			  FLAG = CYCLE;
+			  break;
 
-	  tcs34725_get_RGB_Values(&realRed, &realGreen, &realBlue);
-	  printf("RED = %.2f, GREEN = %.2f, BLUE = %.2f\n", realRed, realGreen, realBlue);
-	  tcs34725_see_rgbLED(realRed, realGreen, realBlue);
-
-	 /* dht11_get_AirHumidity_Temperature(&airHumidity, &temperature);
-	  printf("Air Humidity = %.2f Temperature = %.2f\n", airHumidity, temperature);
-
-	  waterLevel = mh_water_get_value();
-	  printf("water level %s\n", waterLevel);*/
-	  HAL_Delay(500);
+	  	  default:
+	  		  break;
+	  }
   }
+
   /* USER CODE END 3 */
 }
 
@@ -190,7 +269,7 @@ void SystemClock_Config(void)
                               |RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_TIM1;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_PCLK1;
-  PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_SYSCLK;
+  PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_HSI;
   PeriphClkInit.Tim1ClockSelection = RCC_TIM1CLKSOURCE_PCLK1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
@@ -219,15 +298,15 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.LowPowerAutoWait = ENABLE;
   hadc1.Init.LowPowerAutoPowerOff = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.NbrOfConversion = 2;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
@@ -253,6 +332,15 @@ static void MX_ADC1_Init(void)
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Regular Channel 
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = ADC_REGULAR_RANK_2;
+  sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -364,6 +452,51 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 64-1;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 50000-1;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief TIM3 Initialization Function
   * @param None
   * @retval None
@@ -417,6 +550,44 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 64-1;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 50000-1;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
 
 }
 
@@ -522,6 +693,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
+
   /*Configure GPIO pin : GPIO_DHT11_Pin */
   GPIO_InitStruct.Pin = GPIO_DHT11_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -535,9 +709,65 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(LED_GREEN_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PB3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
 }
 
 /* USER CODE BEGIN 4 */
+/*
+ *Waiting for Rx message and do the corresponding actions
+ */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(huart);
+
+  /* NOTE : This function should not be modified, when the callback is needed,
+            the HAL_UART_RxCpltCallback can be implemented in the user file.
+   */
+
+  if(rxIndex < (RXMAXBUFFERSIZE-1))
+  {
+	  if(((char)rxTemp == '\r') || ((char)rxTemp == '\n'))
+  	  {
+		  rxFromGateway[rxIndex] = '\0';
+  		  if(strcmp(rxFromGateway, "get data") == 0 )
+  		  {
+  			  FLAG = REQUEST_DATA;
+  			  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+  			 // memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
+  			  //rxFromGateway[0] = '\0';
+
+  		  }
+  		  else if(strcmp(rxFromGateway, "irrigate") == 0)
+  		  {
+  			  FLAG = IRRIGATE;
+
+  			//rxFromGateway[0] = '\0';
+
+  		  }
+  		  else
+  		  {
+  			  HAL_UART_Transmit(&huart3, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
+  			 // HAL_UART_Transmit(&huart2, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
+  		  }
+		memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
+  		rxIndex = 0;
+  	  }
+  	  else
+  	  {
+  		  rxFromGateway[rxIndex] = rxTemp;
+  		  rxIndex++;
+  	  }
+  }
+  HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
+
+}
 
 /* USER CODE END 4 */
 

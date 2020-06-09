@@ -38,7 +38,17 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+typedef enum {
+	CYCLE,//do nothing
+	REQUEST_DATA,
+	PERIODIC_DATA,
+	IRRIGATE,
+	UPDATE_DEVICE,
+	GET_UID,
+	START_PUMP,
+	STOP_PUMP,
+	TIME_PERIOD
+} REQUEST_TYPE;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
