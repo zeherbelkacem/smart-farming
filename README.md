@@ -34,6 +34,7 @@ The project can also be considered as a skeleton representing the major componen
 - [**RGB Led**](https://www.amazon.fr/Gratuit-KY-016-couleur-Module-Arduino/dp/B00VAPB47M)
 - [**12V water pump**](https://www.amazon.fr/gp/product/B07XJ4L81H/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1)
 - [**9V Duracell Battery**](https://www.amazon.fr/pile-9v-duracell/s?k=pile+9v+duracell)
+- [**KY-019 Relay](https://www.amazon.fr/WINGONEER-KY-019-Bouclier-module-darduino/dp/B06XHJ2PBJ)
 - [**Power Supply Module (3.3V & 5V) MB102**](https://www.amazon.fr/s?k=mb102&i=electronics&__mk_fr_FR=%C3%85M%C3%85%C5%BD%C3%95%C3%91&ref=nb_sb_noss_1)
 
 ### Software tools
