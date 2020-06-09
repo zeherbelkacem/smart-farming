@@ -53,7 +53,7 @@
  *-----------------------------------------------------------------------------
  */
 //#define CLK	(HSI_VALUE)
-#define CLK	(32e6)
+#define CLK	(64e6)
 #define PSC	(CYCLE_HANDLER.Init.Prescaler+1)
 #define ARR (CYCLE_HANDLER.Init.Period+1)
 #define RCR (CYCLE_HANDLER.Init.RepetitionCounter+1)
@@ -68,8 +68,11 @@ extern REQUEST_TYPE FLAG;
 extern TIM_HandleTypeDef 	CYCLE_HANDLER;  	// address of timer structure
 static float 				event_ms;		// event frequency on timer
 static uint16_t 			cycle_trigger;	// counter limit
+static uint16_t 			single_trigger;	// counter limit
 static uint16_t 			cycle_threshold;	// counter
 static uint32_t				cycle_tick;
+static uint32_t				single_tick;
+static uint16_t				single_threshold;
 
 
 
@@ -89,7 +92,7 @@ void timer_start(TIM_HandleTypeDef *htim)
 		event_ms 	*= PSC*ARR*RCR;
 		event_ms 	/= CLK;
 		// counter limit for LED blink
-		cycle_trigger =  CYCLE_VALUE * event_ms;
+		cycle_trigger =  (CYCLE_VALUE * HZ_MS) / event_ms;
 
 		if (cycle_trigger == 0) {
 			//dbg_log("invalid timer %hu", cycle_trigger);
@@ -99,7 +102,20 @@ void timer_start(TIM_HandleTypeDef *htim)
 			cycle_tick = HAL_GetTick();
 			HAL_TIM_Base_Start_IT(htim);
 		}
-	} else {
+
+	}else if (htim->Instance == SINGLE_TIM) {
+		event_ms 	= HZ_MS;
+		event_ms 	*= PSC*ARR*RCR;
+		event_ms 	/= CLK;
+		single_trigger =  (SINGLE_VALUE * HZ_MS) / event_ms ;
+		if (single_trigger == 0) {
+			Error_Handler();
+
+		}else {  // led_trigger should be 5
+			HAL_TIM_Base_Start_IT(htim);
+		}
+	}else {
+
 	//	dbg_log("error start timer");
 		Error_Handler();
 	}
@@ -115,7 +131,11 @@ void timer_stop(TIM_HandleTypeDef *htim)
 	if (htim->Instance == CYCLE_TIM) {
 		//dbg_log("stop led timer");
 		HAL_TIM_Base_Stop_IT(htim);
-	} else {
+	}
+	else if (htim->Instance == SINGLE_TIM) {
+		HAL_TIM_Base_Stop_IT(htim);
+	}
+	else {
 		//dbg_log("error stop timer");
 		Error_Handler();
 	}
@@ -138,4 +158,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			cycle_threshold = 0;
 		}
 	}
+	else if (htim->Instance == SINGLE_TIM) {
+		++single_threshold;
+		if (single_threshold == single_trigger) { // +2 = +200 ms
+			single_tick = HAL_GetTick();
+			FLAG = STOP_PUMP;
+			single_threshold = 0;
+		}
+		}
 }

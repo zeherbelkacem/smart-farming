@@ -61,6 +61,7 @@ I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
@@ -76,6 +77,9 @@ char rxFromGateway[RXMAXBUFFERSIZE] = {0};//
 float realRed = 0.0, realGreen = 0.0, realBlue = 0.0; //RBB driver
 float airHumidity = 0.0, temperature = 0.0; //dht11 driver
 const char *waterLevel, *moistureState; //water driver & soil moisture
+uint32_t start_time;
+uint32_t stop_time;
+uint32_t periodic_time;
 
 
 /* USER CODE END PV */
@@ -90,6 +94,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -162,10 +167,12 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM3_Init();
   MX_TIM2_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   timer_start(&htim2);
   get_mcu_uid(&UIDw0, &UIDw1, &UIDw2);
   //HAL_UART_Receive_IT(&huart2, (uint8_t *)&rxTemp, 1);//test on serial monitor
+  periodic_time = HAL_GetTick();
   HAL_UART_Receive_IT(&huart3, (uint8_t *)&rxTemp, 1);
 
 
@@ -181,27 +188,32 @@ int main(void)
 
 	  switch (FLAG) {
 	  	  case PERIODIC_DATA:
-	  		//  printf("periodic data %lu", HAL_GetTick());
-	  		  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	  		  printf("periodic data %lu\n", HAL_GetTick() - periodic_time );
+	  		  periodic_time = HAL_GetTick();
 	  		  readSend_all_sensor_data();
 	  		  FLAG = CYCLE;//wait
 		  break;
 		  case IRRIGATE:
-			  pump_action();
+			  pump_action_start();
+			  timer_start(&SINGLE_HANDLER);
+			  start_time = HAL_GetTick();
+			 // printf(" START TIME %lu", start_time);
 			  FLAG = CYCLE;
 			  break;
+		  case STOP_PUMP:
+			 pump_action_stop();
+			 timer_stop(&SINGLE_HANDLER);
+			 stop_time = HAL_GetTick();
+			 //printf(" STOP TIME %lu", stop_time);
+			 printf(" PUMP TIME %lu\n", stop_time-start_time);
+			 FLAG = CYCLE;
+			  break;
 		  case REQUEST_DATA:
-			  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 			  readSend_all_sensor_data();
 			  FLAG = CYCLE;
 			  break;
-		  case CYCLE:
-			  break;
-		  case GET_UID:
-	  		  break;
-	  	  case TIME_PERIOD:
-			  break;
-	  	  case UPDATE_DEVICE:
+
+	  	  default:
 	  		  break;
 	  }
   }
@@ -542,6 +554,44 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 64-1;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 50000-1;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -703,8 +753,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   		  }
   		  else
   		  {
-  			 // HAL_UART_Transmit(&huart3, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
-  			  HAL_UART_Transmit(&huart2, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
+  			  HAL_UART_Transmit(&huart3, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
+  			 // HAL_UART_Transmit(&huart2, (uint8_t *)"REQUEST ERROR\n", 15, TIME_OUT);
   		  }
 		memset( rxFromGateway, 0, RXMAXBUFFERSIZE );
   		rxIndex = 0;

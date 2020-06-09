@@ -20,8 +20,11 @@
 /* Exported constants & variables --------------------------------------------*/
 
 #define CYCLE_TIM			 TIM2
+#define SINGLE_TIM 			 TIM6
 #define CYCLE_HANDLER		 htim2
-#define CYCLE_VALUE 3//1.5
+#define SINGLE_HANDLER		 htim6
+#define CYCLE_VALUE 6 //seconds for PERIODIC_CYCLE
+#define SINGLE_VALUE 10 //seconds pump action duration
 
 /* Exported types ------------------------------------------------------------*/
 

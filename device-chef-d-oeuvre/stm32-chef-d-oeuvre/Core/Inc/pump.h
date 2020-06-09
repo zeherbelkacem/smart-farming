@@ -15,5 +15,6 @@
 #include "stdio.h"
 #include "string.h"
 
-void pump_action ();
+void pump_action_start ();
+void pump_action_stop ();
 #endif /* INC_PUMP_H_ */
