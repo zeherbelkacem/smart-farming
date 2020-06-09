@@ -22,10 +22,6 @@ The project can also be considered as a skeleton representing the major componen
 
 ## 3- Initial technical scheme
 ![Semantic description of image](/images/initial-wiring-scheme.png "Initial wiring scheme")
-<<<<<<< HEAD
-
-=======
->>>>>>> belkacem
 
 ## 4- Firmware
 ### Hardware components
