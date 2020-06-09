@@ -1,14 +1,21 @@
 ### iot-based-smart-farming-belkacem
 
-# Iot Based Smart Farming  Monitoring & Control System
+# IoT Based Smart Farming  Monitoring & Control System
 
 [[_TOC_]]
 
-## 1- Preface and acknowledgement
+## 1- Project Intruction
 
-xxxxxxxxxxxxxxx
-xxxxxxxxxxxxxx
-xxxxxxxxxxxxxxx
+The goal of this project is to realize an IoT based smart farming monitoring and control system. In other terms, built a smart irrigation system capable of activating the irrigation process,
+monitoring and data analyzing some climate conditions (temperature, moisture, color...) from an user interface. This project is intended especially for amateur gardeners and can be improved 
+for farming needs in general. 
+
+The project can also be considered as a skeleton representing the major components of Internet of Things:
+- **Firmware** (* device or thing): based STM32 NUCLEO-G071RB Bord
+- **Gateway**: An **ESP8266** is used
+- **Cloud**: the project **back-end** is entirely powered by Amazon Web Services for IoT
+- **Analytic** (TODO)
+- **User interface**: Web page or Mobile application 
 
 ## 2- Initial global scheme
 ![Semantic description of image](/images/initial-global-scheme.png "Initial global scheme")
@@ -16,8 +23,22 @@ xxxxxxxxxxxxxxx
 ## 3- Initial technical scheme
 ![Semantic description of image](/images/initial-wiring-scheme.png "Initial wiring scheme")
 
-
 ## 4- Firmware
+### Hardware components
+- **Board**: [STM32 Nucleo-G071rb ](https://www.st.com/en/evaluation-tools/nucleo-g071rb.html)
+- [**Breadboard & jumper wires**](https://www.amazon.fr/wire-jumper/s?k=wire+jumper)
+- [**RGB sensor TCS34725**](https://www.adafruit.com/product/1334)
+- [**DHT11**](https://www.amazon.fr/Module-Capteur-dhumidit%C3%A9-Temp%C3%A9rature-Arduino/dp/B00HCAC95K)
+- [**Water Level Sensor**](https://fr.aliexpress.com/item/32705326396.html)
+- [**MH sensor series (moisture)**](https://www.amazon.fr/Moisture-contr%C3%B4leur-d%C3%A9tection-darrosage-automatiquement/dp/B072VDXH4K)
+- [**RGB Led**](https://www.amazon.fr/Gratuit-KY-016-couleur-Module-Arduino/dp/B00VAPB47M)
+- [**12V water pump**](https://www.amazon.fr/gp/product/B07XJ4L81H/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1)
+- [**9V Duracell Battery**](https://www.amazon.fr/pile-9v-duracell/s?k=pile+9v+duracell)
+- [**Power Supply Module (3.3V & 5V) MB102**](https://www.amazon.fr/s?k=mb102&i=electronics&__mk_fr_FR=%C3%85M%C3%85%C5%BD%C3%95%C3%91&ref=nb_sb_noss_1)
+
+### Software tools
+### CubeMX configuration
+### Implementation 
 
 ## 5- Gateway
 
