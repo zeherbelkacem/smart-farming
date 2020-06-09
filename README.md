@@ -117,7 +117,8 @@ received from a device to an Amazon DynamoDB:
 > Three lambda functions were built for this project:
 
 ##### 1. **fetchweather-lambda function**: To fetch weather data from openweathermap.com and store the data in dynamoDB (triggered with a periodic AWS **CloudWatch** alarm)
-#### Step 1 -Create lambda function-
+**Step 1 -Create lambda function**
+
 * Go to amozon **Services**, select **Lambda**, **Create a function** and by default **Create from zero**
 * Give a **name** function, **Runtime** select **Python 3.6**. For **role**, select **Create a new lambda basic execution role** and press **Create a function**
 * In **Code entry type**, select **upload a .zip file** (in mu case [lambda.zip](https://gitlab.com/simplon-fad-iot-labege-1/chef-doeuvre/iot-based-smart-farming-belkacem/-/blob/belkacem/device-chef-d-oeuvre/aws/lambda.zip))
@@ -134,13 +135,16 @@ received from a device to an Amazon DynamoDB:
     - To process all the temperature forecasts, we will therefore browse each of the 40 elements of the **List** list using a Python loop: `for prev in content ["list"]`
 > For more details in order to understand AWS Lambda Deployment Package in Python, see [](https://www.youtube.com/watch?v=rDbxCeTzw_k)
 
-#### Step 2 -Add an inline policy for lambda-
+**Step 2 -Add an inline policy for lambda**
+
 * Select **Authorizations** and press **the created lambda role**
 * Press add a **new inline policy**
 * Select the **DynamoDB** service, open **write** section and check **PutItem**
 * For **add ARN**, go to the dynamodb table presentation and copy/paste the ARN, the press **Add**
 * In the next window, give a **name** policy and press **Create policy**
-#### Step 3 -CloudWatch to Schedule AWS Lambda
+
+**Step 3 -CloudWatch to Schedule AWS Lambda**
+
 * In the created lambda function, go to the **Designer** section and press ** add trigger**
 * 
 ![Semantic description of image](/images/weather-lambda.png "cloudWatch")
