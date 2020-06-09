@@ -17,10 +17,10 @@ The project can also be considered as a skeleton representing the major componen
 - **Analytic** (TODO)
 - **User interface**: Web page or Mobile application 
 
-## 2- Initial global scheme
+## 2- Global scheme
 ![Semantic description of image](/images/initial-global-scheme.png "Initial global scheme")
 
-## 3- Initial technical scheme
+## 3- Technical (wiring) scheme
 ![Semantic description of image](/images/initial-wiring-scheme.png "Initial wiring scheme")
 
 ## 4- Firmware
@@ -38,6 +38,8 @@ The project can also be considered as a skeleton representing the major componen
 - [**Power Supply Module (3.3V & 5V) MB102**](https://www.amazon.fr/s?k=mb102&i=electronics&__mk_fr_FR=%C3%85M%C3%85%C5%BD%C3%95%C3%91&ref=nb_sb_noss_1)
 
 ### Software tools
+[**Stm32CubeIde for Ubuntu**](https://www.st.com/en/development-tools/stm32cubeide.html)
+[**CuteCom Console for Ubuntu**](https://help.ubuntu.com/community/Cutecom)
 ### CubeMX configuration
 ### Implementation 
 
