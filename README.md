@@ -43,11 +43,11 @@ The project can also be considered as a **skeleton** representing the major comp
 ### CubeMX configuration
 **Pinout Configuration**
 
-![Semantic description of image](/images/pinout-configuartion.png "Initial wiring scheme")
+![Semantic description of image](/images/pinout-configuaration.png "pinout configuration")
 
 **Clock Configuration**
 
-![Semantic description of image](/images/clock-configuartion.png "Initial wiring scheme")
+![Semantic description of image](/images/clock-configuaration.png "clokc configuration")
 
 ### Implementation 
 
