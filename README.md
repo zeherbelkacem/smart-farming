@@ -10,7 +10,7 @@ The goal of this project is to realize an IoT based smart farming monitoring and
 monitoring and data analyzing some climate conditions (temperature, moisture, color...) from an user interface. This project is intended especially for amateur gardeners and can be improved 
 for farming needs in general. 
 
-The project can also be considered as a skeleton representing the major components of Internet of Things:
+The project can also be considered as a **skeleton** representing the major components of Internet of Things (and can be adapted for other projects using ESP8266 as a Gateway):
 - **Firmware** (* device or thing): based STM32 NUCLEO-G071RB Bord
 - **Gateway**: An **ESP8266** is used
 - **Cloud**: the project **back-end** is entirely powered by Amazon Web Services for IoT
@@ -34,13 +34,21 @@ The project can also be considered as a skeleton representing the major componen
 - [**RGB Led**](https://www.amazon.fr/Gratuit-KY-016-couleur-Module-Arduino/dp/B00VAPB47M)
 - [**12V water pump**](https://www.amazon.fr/gp/product/B07XJ4L81H/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1)
 - [**9V Duracell Battery**](https://www.amazon.fr/pile-9v-duracell/s?k=pile+9v+duracell)
-- [**KY-019 Relay](https://www.amazon.fr/WINGONEER-KY-019-Bouclier-module-darduino/dp/B06XHJ2PBJ)
+- [**KY-019 Relay**](https://www.amazon.fr/WINGONEER-KY-019-Bouclier-module-darduino/dp/B06XHJ2PBJ)
 - [**Power Supply Module (3.3V & 5V) MB102**](https://www.amazon.fr/s?k=mb102&i=electronics&__mk_fr_FR=%C3%85M%C3%85%C5%BD%C3%95%C3%91&ref=nb_sb_noss_1)
 
 ### Software tools
 [**Stm32CubeIde for Ubuntu**](https://www.st.com/en/development-tools/stm32cubeide.html)
 [**CuteCom Console for Ubuntu**](https://help.ubuntu.com/community/Cutecom)
 ### CubeMX configuration
+**Pinout Configuration**
+
+![Semantic description of image](/images/pinout-configuartion.png "Initial wiring scheme")
+
+**Clock Configuration**
+
+![Semantic description of image](/images/clock-configuartion.png "Initial wiring scheme")
+
 ### Implementation 
 
 ## 5- Gateway
