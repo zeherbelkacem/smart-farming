@@ -57,9 +57,31 @@ The project can also be considered as a **skeleton** representing the major comp
 <p>I'll just show how to implement the STM32 ADC Multi-channels use and the <strong>12V pump  driver</strong> </br>
 For the rest, I'll let you take a look at the <strong>/device-chef-d-oeuvre/stm32-chef-d-oeuvre</strong> directory</p>
 
-### 4.5.1 ADC Multi-channels method
-### 4.5.2. Pump action driver
+### 4.5.1 ADC Multi-channels method (PollforConversion)
+<p>We need to set up the channels we want to read under ADC (the alone ADC1 of Nucleo). Here We will read Channels IN0 (water level)and channel IN1 (moisture state).</p>
 
+* Set AD1 configuration, see the last configuration section
+* Start ADC: `HAL_ADC_Start(&hadc1);`
+* Read water level input:
+```
+HAL_ADC_PollForConversion(&hadc1, 100);
+waterLevelInput = HAL_ADC_GetValue(&hadc1);
+```
+* Read moisture input: 
+```
+HAL_ADC_PollForConversion(&hadc1, 100);
+moistureInput = HAL_ADC_GetValue(&hadc1);
+```
+* Stop ADC: `HAL_ADC_Stop(&hadc1);`
+
+### 4.5.2. Pump action driver
+> Just pay attention to the inverted logic when using the stm32 to write to the gpio outputs (0V, 5V)
+
+```
+HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, 0 ); //put GPIO_PIN_3 to 5V because inverse logic
+...
+HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, 1 );//put GPIO_PIN_3 to 0V because inverse logic
+```
 ### 4.5 The final firmware STATE MACHINE
 ```
 /* Infinite loop */
