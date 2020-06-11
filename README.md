@@ -24,7 +24,7 @@ The project can also be considered as a **skeleton** representing the major comp
 ![Semantic description of image](/images/initial-wiring-scheme.png "Initial wiring scheme")
 
 ## 4- Firmware
-### Hardware components
+### 4.1. Hardware components
 - **Board**: [STM32 Nucleo-G071rb ](https://www.st.com/en/evaluation-tools/nucleo-g071rb.html)
 - [**Breadboard & jumper wires**](https://www.amazon.fr/wire-jumper/s?k=wire+jumper)
 - [**RGB sensor TCS34725**](https://www.adafruit.com/product/1334)
@@ -37,10 +37,11 @@ The project can also be considered as a **skeleton** representing the major comp
 - [**KY-019 Relay**](https://www.amazon.fr/WINGONEER-KY-019-Bouclier-module-darduino/dp/B06XHJ2PBJ)
 - [**Power Supply Module (3.3V & 5V) MB102**](https://www.amazon.fr/s?k=mb102&i=electronics&__mk_fr_FR=%C3%85M%C3%85%C5%BD%C3%95%C3%91&ref=nb_sb_noss_1)
 
-### Software tools
-[**Stm32CubeIde for Ubuntu**](https://www.st.com/en/development-tools/stm32cubeide.html)
-[**CuteCom Console for Ubuntu**](https://help.ubuntu.com/community/Cutecom)
-### CubeMX configuration
+### 4.2. Software tools
+- [**Stm32CubeIde for Ubuntu**](https://www.st.com/en/development-tools/stm32cubeide.html)
+- [**CuteCom Console for Ubuntu**](https://help.ubuntu.com/community/Cutecom)
+
+### 4.3. CubeMX configuration
 **Pinout Configuration**
 
 ![Semantic description of image](/images/pinout-configuration.png "pinout configuration")
@@ -49,21 +50,26 @@ The project can also be considered as a **skeleton** representing the major comp
 
 ![Semantic description of image](/images/clock-configuration.png "clokc configuration")
 
-### Implementation 
+### 4.5 Implementation 
 
 ## 5- Gateway
+
+### 5.1. 
+### 5.2.
+### 5.3.
+
 
 ## 6- AWS
 For this section, we'll need the following steps:
 ######
-### 1. **Sign to the AWS IoT Console**
+### 6.1. **Sign to the AWS IoT Console**
 
 Go to: [Aws IoT Console ](https://aws.amazon.com/fr/console/)
 
-### 2. **Create thing** 
+### 6.2. **Create thing** 
 
-> AWS IoT is used to communicate with the your board (**Nucleo-G071rb** in my case) as well as process data coming from the device. Data is automatically processed by AWS IoT Rules Engine.
-> To connect our device to the AWS IoT (in my case, i used **MQTT** Protocole), at least, we need 4 elements (use case in **GateWay** section):
+<p> AWS IoT is used to communicate with the your board (<strong>Nucleo-G071rb</strong> in my case) as well as process data coming from the device. Data is automatically processed by AWS IoT Rules Engine .</br>
+To connect our device to the AWS IoT (in my case, i used <strong>MQTT</strong> Protocole), at least, we need 4 elements (use case in <strong>GateWay</strong> section):</p>
 
 1. Thing Certificate (ends with .pem.crt)
 1. Private key security (ends with.key)
@@ -94,7 +100,7 @@ In my case, I used AWS IoT Core's X.509 certificate. Certificates must be activa
 ![Semantic description of image](/images/aws-mqttbrocker.png "Mqqt Brocker") 
 > For more details, see: [Create thing and and register a device ](https://docs.aws.amazon.com/iot/latest/developerguide/create-aws-thing.html)
 
-### 3. **Configure rules** 
+### 6.3. **Configure rules** 
 
 > The AWS IoT rules engine listens for incoming (from the device) MQTT messages that match a rule. When a matching message is received, the rule takes some action
 with the data in the MQTT message (in this project :writing (INSERT) data to an Amazon DynamonDB). In this step, you create and configure a rule to send the data 
@@ -114,7 +120,7 @@ received from a device to an Amazon DynamoDB:
 * 
 > for more details, see [aws dynamodb rule](https://docs.aws.amazon.com/iot/latest/developerguide/iot-ddb-rule.html)
 
-### 4. **Create dynamonDB table(s)**
+### 6.4. **Create dynamonDB table(s)**
 
 > I need two tables for this project:
 
@@ -122,11 +128,14 @@ received from a device to an Amazon DynamoDB:
 2. **final_project**: to store sensors data of device the device 
 > Go to amozon **Services** and select **Dynamodb**, then **Create a new Table**.
 > Give a name table, a **primary key** and **sort key** (optinal). Once created, go to the table presentation and save somewhere the table **ARN**
-### 5. **Build lambda functions and API Gateway(s)**
+
+### 6.5. **Build lambda functions and API Gateway(s)**
 
 > Three lambda functions were built for this project:
 
-##### 1. **fetchweather-lambda function**: To fetch weather data from openweathermap.com and store the data in dynamoDB (triggered with a periodic AWS **CloudWatch** alarm)
+##### 6.5.1. **fetchweather-lambda function**: 
+> To fetch weather data from openweathermap.com and store the data in dynamoDB (triggered with a periodic AWS **CloudWatch rule** (*alarm*))
+
 **Step 1 -Create lambda function**
 
 * Go to amozon **Services**, select **Lambda**, **Create a function** and by default **Create from zero**
@@ -163,7 +172,9 @@ received from a device to an Amazon DynamoDB:
 * Give a **name** rule and for **Expression of planification**, put the period you want (for me: 1 day)
 > In my case, this means that lambda function will be triggered to fetch data from **openweathermap.com** station every **day** 
 
-##### 2. **get-data-lambda-function**: To publish a message action (get data from device) in a desired topic where device is subcribing 
+##### 6.5.2. **get-data-lambda-function**: 
+> To publish a message action (get data from device) in a desired topic where device is subcribing 
+
 * **Create** a new lambda function, **name** it, **python 3.6** for **Runtime** and **default role** for lambda **role**
 * Copy the following python code content and paste it lambda functio code section 
 ```
@@ -199,13 +210,57 @@ def lambda_handler(event, context):
 
 ![Semantic description of image](/images/apigateway.png "API Gateway trigger")
 
-##### 3. **irrigate-lambda-function**: The same as the second function, the difference is in the action (here: water pump action). The both are triggered by an API REST (**AWS API GateWay**)
+##### 6.5.3. **irrigate-lambda-function**: 
+> The same as the second function, the difference is in the action (here: water pump action). The both are triggered by an API REST (**AWS API GateWay**)
+
 > In lamnbda python code, change **{'command': 'get data\r'}** by **{'command': 'irrigate\r'}** 
 > To this function, you can use the same **API Gateway** previously created, ad**a new ressource**, **a new method** and match it with this lambda function
 > Do the same as previously in deploying the **API REST**: **API Url** (*https://xxxxxxxxxx.execute-api.eu-west-2.amazonaws.com/irrigate/irrigate*)
 > To test your lambda function, go to **aws Services**/**IoT Core**/**Test**/**Subscribe to a topic** ((ex: irrigateTopic)/Invoke the trigger **API Url** and see the results
-### 6. **Host dashboard in Aws S3**
 
+### 6.6. **Host dashboard in Aws S3**
+
+> In this part, I will create an S3 **Bucket** to host my **dashboard** (see the next chapter). I will need to set some authorizations (policies) and get my the dashboard **Url adress**
+
+#### 6.6.1. Create an AWS S3 Bucket
+* Go to AWS Services, select **S3** and press **Create a bucket**
+* Give a **name** bucket, select your **region** and press **Next**
+* In the step, leave everythings by default and press **Next**
+* By default, press **Next** and press **Create a bucket**
+
+#### 6.6.2. Upload Web Site files (Dashboard) in Bucket
+* To avoid problems in this step, choose the last **Chrome** version
+* In AWS **S3**, press on your created bucket **name**
+* Go to your loacl machine where your web site **folder** is saved and open it
+* Select all files and subdirectories inside your web side folder
+* Drag and drop the selected files from your local machine to the content displayed on the Preview tab of the S3 console.
+
+![Semantic description of image](/images/s3-files.png "buckets files") 
+
+#### 6.6.3. Security
+* In S3 console, open **permissions** and press **Modify**
+* Unchek the two last points: <<*Block new public bucket policies*>> and <<*Block access to the public and to cross accounts if the sub-fund has public policies*>>
+* Press **save** and go to **Bucket policies**
+* Past the following policy with changing *BUCKETNAME* with your **bucket name** then press **save**
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::BUCKETNAME/*"
+        }
+    ]
+}
+```
+#### 6.6.4. Get site Endpoint (Url)'
+
+* In S3 console, select **properties** and open **static web site hosting**
+* Check **Use this bucket to host your web site**
+* For **Index document**, choose your **index.html**, then **save**
+* In my case, my endpoint is: *http://farmingdashboard.s3-website.eu-west-2.amazonaws.com *
 
 ## 7- Dashboard
 ![Semantic description of image](/images/dashboard.png "Initial wiring scheme")
