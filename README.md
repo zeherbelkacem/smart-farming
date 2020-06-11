@@ -260,7 +260,7 @@ def lambda_handler(event, context):
 * In S3 console, select **properties** and open **static web site hosting**
 * Check **Use this bucket to host your web site**
 * For **Index document**, choose your **index.html**, then **save**
-* In my case, my endpoint is: *http://farmingdashboard.s3-website.eu-west-2.amazonaws.com *
+* In my case, my endpoint is: http://farmingdashboard.s3-website.eu-west-2.amazonaws.com 
 
 ## 7- Dashboard
 ![Semantic description of image](/images/dashboard.png "Initial wiring scheme")
