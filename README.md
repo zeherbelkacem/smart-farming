@@ -4,7 +4,7 @@
 
 [[_TOC_]]
 
-## 1- Project Intruction
+## 1- Project Introduction
 
 The goal of this project is to realize an IoT based smart farming monitoring and control system. In other terms, built a smart irrigation system capable of activating the irrigation process,
 monitoring and data analyzing some climate conditions (temperature, moisture, color...) from an user interface. This project is intended especially for amateur gardeners and can be improved 
@@ -24,6 +24,9 @@ The project can also be considered as a **skeleton** representing the major comp
 ![Semantic description of image](/images/initial-wiring-scheme.png "Initial wiring scheme")
 
 ## 4- Firmware
+
+> All the firmware was coded in **C language***
+
 ### 4.1. Hardware components
 - **Board**: [STM32 Nucleo-G071rb ](https://www.st.com/en/evaluation-tools/nucleo-g071rb.html)
 - [**Breadboard & jumper wires**](https://www.amazon.fr/wire-jumper/s?k=wire+jumper)
@@ -50,19 +53,129 @@ The project can also be considered as a **skeleton** representing the major comp
 
 ![Semantic description of image](/images/clock-configuration.png "clokc configuration")
 
-### 4.5 Implementation 
+### 4.5. Implementation 
+<p>I'll just show how to implement the STM32 ADC Multi-channels use and the <strong>12V pump  driver</strong> </br>
+For the rest, I'll let you take a look at the <strong>/device-chef-d-oeuvre/stm32-chef-d-oeuvre</strong> directory</p>
+
+### 4.5.1 ADC Multi-channels method
+### 4.5.2. Pump action driver
+
+### 4.5 The final firmware STATE MACHINE
+```
+/* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+
+	  switch (FLAG) {
+	  	  case PERIODIC_DATA:
+	  		  dbg_log("periodic data %lu\n", HAL_GetTick() - periodic_time );
+	  		  periodic_time = HAL_GetTick();
+	  		  readSend_all_sensor_data();
+	  		  FLAG = CYCLE;//wait
+		  break;
+		  case IRRIGATE:
+			  pump_action_start();
+			  timer_start(&SINGLE_HANDLER);
+			  start_time = HAL_GetTick();
+			  //dbg_log(" START TIME %lu", start_time);
+			  FLAG = CYCLE;
+			  break;
+		  case STOP_PUMP:
+			 pump_action_stop();
+			 timer_stop(&SINGLE_HANDLER);
+			 stop_time = HAL_GetTick();
+			 //dbg_log(" STOP TIME %lu", stop_time);
+			 printf(" PUMP TIME %lu\n", stop_time-start_time);
+			 FLAG = CYCLE;
+			  break;
+		  case REQUEST_DATA:
+			  readSend_all_sensor_data();
+			  FLAG = CYCLE;
+			  break;
+
+	  	  default:
+	  		  break;
+	  }
+  }
+
+  /* USER CODE END 3 */
+```
+
 
 ## 5- Gateway
+<p>To interface between the device (embedded part) and the cloud (aws), I used WEMOS D1 mini Pro board (ESP8266). It reads and writes (data) on the Nucleo using </br>
+the UART protocol (RxTx). To send data to the <strong>cloud</strong> (AWS), a WIFI connection and an <strong>MQTT</strong> (Subscribe & publish) protocol are needed.</br> 
+To use <strong>MQTT</strong> protocol with AWS <strong>account</strong>, the provided <strong>security keys</strong> and <strong>Endpoint adress</strong> are also needed </br>
+(see the registering device part in the next AWS IoT chapter).</p>
 
-### 5.1. 
-### 5.2.
-### 5.3.
+![Semantic description of image](/images/nucleo-esp-aws.png "nucleo esp8266AWS ")
+
+> All the gateway was coded in **C++ language**
+
+### 5.1. Hardware components & Software tools
+* [Visual Studio Code (VSCode) for Ubuntu](https://code.visualstudio.com/)
+* [PlatformIO for VSCode](https://platformio.org/platformio-ide), to be installed directly on VSCode
+* As gateway module (board), [ESP8266: Wemos D1 mini pro](https://www.amazon.fr/Wemos-D1-Mini-Pro-Esp8266-Carte-d%C3%A9veloppement/dp/B06XWDVGJ5) was used (see wiring )
+
+### 5.2. The used Librairies 
+
+| Nucleo-ESP8266 Interfacing                    | ESP8266-AWS IoT Interfacing                    |
+| --------------------------------------------- | ---------------------------------------------- |
+| **SoftwareSerial**: for UART connection       | **ESP8266WIFI**: WiFi connection               |
+| **Arduino**: for serial monitor               | **PubSubClient**:  Mqtt topic subscribe/publish|
+|                                               | **ArduinoJson**: JSON format                   |
+|                                               | **libb64/decode**: AWS certificats decoding    |
+|                                               | **ctime**: Unix time                           | 
+
+### 5.3. Implementation
+
+See the [esp8266-chef-d-ouevre directory](https://gitlab.com/simplon-fad-iot-labege-1/chef-doeuvre/iot-based-smart-farming-belkacem/-/tree/master/device-chef-d-oeuvre/esp8266-chef-d-oeuvre)
+
+### 5.4. Gateway STATE MACHINE
+```
+/*****==================================================================*****/
+void loop() {
+  connectToAws();
+  pubSubClient.loop();
+  if(espRxTx.available()) {
+      char buffer[256]={0};
+      size_t count = espRxTx.readBytes(buffer, sizeof(buffer));
+      Serial.print(" --- buffer : ");
+      Serial.println(buffer);
+      sendDatatoAws(buffer);
+  }
+  else{
+    switch (FLAG)
+    {
+    case REQUEST_DATA:
+      espRxTx.write(getData);
+      FLAG = CYCLE;
+      break;
+    case IRRIGATE:
+        espRxTx.write(irrigate);
+      FLAG = CYCLE;
+      break;
+    
+    default:
+      break;
+    }
+  }
+     
+}
+/*****==================================================================*****/
+```
+
+
 
 
 ## 6- AWS
-For this section, we'll need the following steps:
-######
-### 6.1. **Sign to the AWS IoT Console**
+<p>For this section, we'll need the following steps:</p>
+
+### 6.1. Sign to the AWS IoT Console
 
 Go to: [Aws IoT Console ](https://aws.amazon.com/fr/console/)
 
@@ -263,9 +376,14 @@ def lambda_handler(event, context):
 * In my case, my endpoint is: http://farmingdashboard.s3-website.eu-west-2.amazonaws.com 
 
 ## 7- Dashboard
+### 7.1. Software Tools and programming language 
+### 7.1. The Pool Identity
+### 7.2. Dashbord components 
 ![Semantic description of image](/images/dashboard.png "Initial wiring scheme")
 
 ## 8- Android
+
+> To be completed
 
 ## 9- Conclusion
 
