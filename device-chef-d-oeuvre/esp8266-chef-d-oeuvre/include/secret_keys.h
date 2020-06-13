@@ -1,21 +1,19 @@
-
-
 #define THINGNAME "smart-farming" //the name of the your iot thing
 //Topics names
-const char MQTT_SUB_TOPIC[] = "irrigateTopic";//"iot/topic";//"$aws/things/dht11/shadow/update";
-const char MQTT_PUB_TOPIC[] = "farmingTopic";//"$aws/things/dht11/shadow/update";
+const char MQTT_SUB_TOPIC[] = "irrigateTopic";
+const char MQTT_PUB_TOPIC[] = "farmingTopic";
 // Local wireless network
-const char* WIFI_SSID     = "Livebox-985F";
-const char* WIFI_PASSWORD = "CCE3307F9AEE19E35E6E78825E";
+const char* WIFI_SSID     = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 /*const char* WIFI_SSID     = "AndroidAP9454";
 const char* WIFI_PASSWORD = "956e2d49b82b";*/
 //aws mqqt brocker address
-const char AWS_IOT_ENDPOINT[] = "a2can1njaaznqt-ats.iot.eu-west-2.amazonaws.com";
+const char AWS_IOT_ENDPOINT[] = "xxxxxxxxxxxxxx-ats.iot.eu-west-2.amazonaws.com";////REPLACE WITH OWN ENDPOINT
 
 // Amazon Root CA 1
 const String AWS_CERT_CA = \
 //-----BEGIN CERTIFICATE-----
-"MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF"\
+"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"\//REPLACE WITH OWN KEY
 "ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6"\
 "b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL"\
 "MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJv"\
@@ -38,7 +36,7 @@ const String AWS_CERT_CA = \
 // Device Certificate
 const String AWS_CERT_CRT = \
 //-----BEGIN CERTIFICATE-----
-"MIIDWjCCAkKgAwIBAgIVAPpK5eRPc8MLsByiqB5n5g0BV+9ZMA0GCSqGSIb3DQEB"\
+"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"\//REPLACE WITH OWN KEY
 "CwUAME0xSzBJBgNVBAsMQkFtYXpvbiBXZWIgU2VydmljZXMgTz1BbWF6b24uY29t"\
 "IEluYy4gTD1TZWF0dGxlIFNUPVdhc2hpbmd0b24gQz1VUzAeFw0yMDA1MTkxMTU0"\
 "MDhaFw00OTEyMzEyMzU5NTlaMB4xHDAaBgNVBAMME0FXUyBJb1QgQ2VydGlmaWNh"\
@@ -62,7 +60,7 @@ const String AWS_CERT_CRT = \
 // Device Private Key
 const String AWS_CERT_PRIVATE = \
 //-----BEGIN RSA PRIVATE KEY-----
-"MIIEpAIBAAKCAQEAzy69sTYN587HJViGXoEmxsK7LUq6XU1xzm5dT7iEHpqvkVXx"\
+"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"\//REPLACE WITH OWN KEY
 "ma4qIsBJJ4mJ+mpht8JBNvMlAYsmHs6534Efv5NZo2TDRo8siSF3hE+ayCR3tpNV"\
 "ob74eIgOMNXMR+8aQENPy5q1CHga7MzI6k+4Fhp4CCof2OO0GCK8yGuva0BLF7+N"\
 "n/uwZTa8Am92Wx9Ypz/hieTIYdXs0ebvZbCwvA5vBFazyE1rvrRaaOY8UpnXPtOb"\
