@@ -435,7 +435,7 @@ AWS.config.credentials = new AWS.CognitoIdentityCredentials({
 
 ### How to use the project 
 
-* Download the project (and software tools and components: boards, sensors...)
+* Download the project (and software tools + components: StmCubeIde, vscode, boards, sensors...)
 * For **Firmware** in **Stm32CubeIde**:
 - [ ]  Files/Open Project/...device-chef-d-oeuvre/stm32-chef-d-oeuvre
 - [ ] - Project/generate code
