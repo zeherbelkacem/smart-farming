@@ -398,10 +398,11 @@ def lambda_handler(event, context):
 > **Sublime Text**, **HTML**, **CSS**, **JavaScrip**, **Ajax**, **jQuery**, **chart.js**, **nvd3**
 
 ### 7.1. The Pool Identity
-<p>With an identity pool, users can obtain temporary AWS credentials to access AWS services, such as Amazon S3 and DynamoDB.</p>
-<p>In my case, to build my dashboard, I need to have access to my AWS account services (dynamoDB, S3, API Gateway, lambda....</br>
+> <p>With an identity pool, users can obtain temporary AWS credentials to access AWS services, such as Amazon S3 and DynamoDB.</p>
+
+<p>In my case, to build my dashboard, I need to have access to my AWS account services (dynamoDB, S3, API Gateway, lambda...).</br>
 So, an <strong>Identity Pool Id</strong> and a <strong>Region</strong> must be provided (for JAVASCRIPT). Also, a policies (for each service)</br>
-must be atteched to the <strong>Unanthentified Groups </strong> <strong>Role</strong>  : </p>
+must be attached to the <strong>Unanthentified Groups </strong> <strong>Role</strong>  : </p>
 
 * Go to the **Amazon Cognito Console** and **Create an identity Pool**
 * Give a **name pool**, check **acticate access to unanthentified pools** and press **Create a pool**
