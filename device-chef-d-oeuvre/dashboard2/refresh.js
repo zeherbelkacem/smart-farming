@@ -1,7 +1,7 @@
 // Initialiser le fournisseur d'informations d'identification Amazon Cognito
 AWS.config.region = 'eu-west-2'; // Région
 AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-    IdentityPoolId: 'eu-west-2:d7f6b9a5-ef9b-4e6c-a233-9c821dcdaae6',
+    IdentityPoolId: 'eu-west-2:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', //Replace with your IdentityPoolId
 });
 
 
