@@ -1,5 +1,3 @@
-### iot-based-smart-farming-belkacem
-
 # IoT Based Smart Farming  Monitoring & Control System
 
 [[_TOC_]]
@@ -20,7 +18,7 @@ The project can also be considered as a **skeleton** representing the major comp
 ## 2- Global scheme
 ![Semantic description of image](/images/initial-global-scheme.png "Initial global scheme")
 
-## 3- Technical (wiring) scheme
+## 3- Technical scheme (wiring)
 ![Semantic description of image](/images/initial-wiring-scheme.png "Initial wiring scheme")
 
 ## 4- Firmware
@@ -28,6 +26,7 @@ The project can also be considered as a **skeleton** representing the major comp
 > All the firmware was coded in **C language***
 
 ### 4.1. Hardware components
+
 - **Board**: [STM32 Nucleo-G071rb ](https://www.st.com/en/evaluation-tools/nucleo-g071rb.html)
 - [**Breadboard & jumper wires**](https://www.amazon.fr/wire-jumper/s?k=wire+jumper)
 - [**RGB sensor TCS34725**](https://www.adafruit.com/product/1334)
@@ -190,9 +189,6 @@ void loop() {
 }
 /*****==================================================================*****/
 ```
-
-
-
 
 ## 6- AWS
 <p>For this section, we'll need the following steps:</p>
@@ -399,7 +395,31 @@ def lambda_handler(event, context):
 
 ## 7- Dashboard
 ### 7.1. Software Tools and programming language 
+> **Sublime Text**, **HTML**, **CSS**, **JavaScrip**, **Ajax**, **jQuery**, **chart.js**, **nvd3**
+
 ### 7.1. The Pool Identity
+<p>With an identity pool, users can obtain temporary AWS credentials to access AWS services, such as Amazon S3 and DynamoDB.</p>
+<p>In my case, to build my dashboard, I need to have access to my AWS account services (dynamoDB, S3, API Gateway, lambda....</br>
+So, an <strong>Identity Pool Id</strong> and a <strong>Region</strong> must be provided (for JAVASCRIPT). Also, a policies (for each service)</br>
+must be atteched to the <strong>Unanthentified Groups </strong> <strong>Role</strong>  : </p>
+
+* Go to the **Amazon Cognito Console** and **Create an identity Pool**
+* Give a **name pool**, check **acticate access to unanthentified pools** and press **Create a pool**
+* Press **Authorize**
+* In platform, select **JavaScript** and copy your identifiers (Identity Pool Id & region)
+```
+// Initialiser le fournisseur d'informations d'identification Amazon Cognito
+AWS.config.region = 'eu-west-2'; // Région
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+    IdentityPoolId: 'eu-west-2:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxx', //Replace with yours 
+});
+```
+* Past the last code in the head your JavaScript **file** (refresh.js in my case)
+* Go to **IAM Console** and select **Roles**
+* Serach for your **Cognito_YOURGROUPNAMEGrpIdUnauth_Role** and click on it
+* Press **add inline policies** and select the concerned services
+* In my case, I need policies to access to **dynamoDB services** (GetItems, Query...)
+
 ### 7.2. Dashbord components 
 ![Semantic description of image](/images/dashboard.png "Initial wiring scheme")
 
@@ -407,6 +427,26 @@ def lambda_handler(event, context):
 
 > To be completed
 
-## 9- Conclusion
+## 9- Small Demonstration 
+### 9.1. Demo
+
+[Video Demo](https://youtu.be/_paBueTVGjk)
+
+### How to use the project 
+
+* Download the project (and software tools and components: boards, sensors...)
+* For **Firmware** in **Stm32CubeIde**:
+- [ ]  Files/Open Project/...device-chef-d-oeuvre/stm32-chef-d-oeuvre
+- [ ] - Project/generate code
+- [ ] - Project/built project
+- [ ] - Run/debug As... (ensure that your NUCLEO is connect in Usb)
+* For **GateWay** in **Vscode**
+- [ ] - Install **PlatformIo** and in platfomIO install all the **librairies** used in the **GateWay section above**
+- [ ] - In platformIO: Open project/...device-chef-d-oeuvre/ESP8266-chef-d-oeuvre
+- [ ] - In **secret_keys.h file**, replace all your personnal identifiers (wifi, aws...)
+- [ ] - In the bottom blue strip: PlatformIo:Build then PlatformIo:Upload (with connecting your ESP8266 in usb)
+* For **AWS**: see the **AWS section** to create account, create a thing, have different identifiers...
+* For **Dashboard**: In **refresh.js file**, replace your **region** and **IdentityPoolId**
+* Pay attention that the **wiring above** is well done 
 
 
